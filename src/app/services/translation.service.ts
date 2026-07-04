@@ -23,7 +23,10 @@ const translations = {
     themeDark: 'Dark Theme',
     themeToggle: 'Toggle Theme',
     langToggle: 'Language',
-    dropOverlay: 'Drop file here to open'
+    dropOverlay: 'Drop file here to open',
+    columns: 'columns',
+    size: 'Size',
+    delimiter: 'Delimiter'
   },
   es: {
     openFile: 'Abrir archivo',
@@ -45,7 +48,10 @@ const translations = {
     themeDark: 'Tema Oscuro',
     themeToggle: 'Cambiar Tema',
     langToggle: 'Idioma',
-    dropOverlay: 'Suelte el archivo aquí para abrir'
+    dropOverlay: 'Suelte el archivo aquí para abrir',
+    columns: 'columnas',
+    size: 'Tamaño',
+    delimiter: 'Delimitador'
   }
 };
 

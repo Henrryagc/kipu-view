@@ -139,6 +139,30 @@ export class App {
     () => this.tableRows().length,
   );
 
+  readonly fileSizeLabel: Signal<string> = computed(() => {
+    const content = this.fileContent();
+    if (!content) return '0 B';
+    const bytes = content.length; // rough estimate
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  });
+
+  readonly delimiterLabel: Signal<string> = computed(() => {
+    const kind = this.delimiterKind();
+    const t = this.ts.t();
+    switch (kind) {
+      case 'comma':
+        return t.comma;
+      case 'semicolon':
+        return t.semicolon;
+      case 'tab':
+        return t.tab;
+      case 'custom':
+        return `${t.custom} (${this.effectiveDelimiter() || ''})`;
+    }
+  });
+
   // ---------------------------------------------------------------------
   // File selection + reading
   // ---------------------------------------------------------------------
