@@ -1,11 +1,12 @@
-import { Component, EventEmitter, Output, inject, input, signal, ViewChild, ElementRef } from '@angular/core';
+import { Component, EventEmitter, Output, inject, input, signal, ViewChild, ElementRef, computed } from '@angular/core';
 import { TranslationService } from '../../services/translation.service';
 import { TooltipDirective } from '../../directives/tooltip.directive';
+import { SelectComponent } from '../select/select.component';
 
 @Component({
   selector: 'app-toolbar',
   standalone: true,
-  imports: [TooltipDirective],
+  imports: [TooltipDirective, SelectComponent],
   template: `
     <header class="toolbar">
       <!-- Left: File controls & Delimiter configuration -->
@@ -29,33 +30,28 @@ import { TooltipDirective } from '../../directives/tooltip.directive';
         <div class="divider"></div>
 
         <div class="toolbar-group">
-          <label class="field">
-            <span class="field-label">{{ ts.t().separator }}</span>
-            <div class="select-wrapper">
-              <select class="select" (change)="onKindSelect($event)">
-                <option value="comma" [selected]="delimiterKind() === 'comma'">{{ ts.t().comma }}</option>
-                <option value="semicolon" [selected]="delimiterKind() === 'semicolon'">{{ ts.t().semicolon }}</option>
-                <option value="tab" [selected]="delimiterKind() === 'tab'">{{ ts.t().tab }}</option>
-                <option value="custom" [selected]="delimiterKind() === 'custom'">{{ ts.t().custom }}</option>
-              </select>
+          <app-select
+            [label]="ts.t().separator"
+            [options]="delimiterOptions()"
+            [value]="delimiterKind()"
+            (valueChange)="onKindSelect($event)"
+          />
+
+          @if (delimiterKind() === 'custom') {
+            <div class="field-custom">
+              <div class="custom-input-container" [class.has-value]="customChar()" [class.has-error]="customCharError()">
+                <span class="custom-input-label">{{ ts.t().character }}</span>
+                <input #customInput class="input input-char" type="text" placeholder="|" [value]="customChar()" (input)="onCharInput($event)" />
+
+                @if (customCharError()) {
+                  <span class="field-error">
+                    {{ customCharError() }}
+                  </span>
+                }
+              </div>
             </div>
-          </label>
-
-        @if (delimiterKind() === 'custom') {
-          <div class="field-custom">
-            <label class="field">
-              <span class="field-label">{{ ts.t().character }}</span>
-              <input #customInput class="input input-char" type="text" placeholder="|" [class.input-error]="customCharError()" [value]="customChar()" (input)="onCharInput($event)" />
-            </label>
-
-            @if (customCharError()) {
-              <span class="field-error">
-                {{ customCharError() }}
-              </span>
-            }
-          </div>
-        }
-      </div>
+          }
+        </div>
     </div>
 
       <!-- Right: Settings & Readouts -->
@@ -99,13 +95,13 @@ import { TooltipDirective } from '../../directives/tooltip.directive';
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 24px;
+      padding: 18px 24px 10px 24px;
       background: var(--panel-glass);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border-glass);
       box-shadow: var(--shadow-sm);
-      z-index: 20;
+      z-index: 50;
       flex-shrink: 0;
       gap: 16px;
     }
@@ -148,6 +144,62 @@ import { TooltipDirective } from '../../directives/tooltip.directive';
       align-items: center;
       gap: 8px;
       animation: slideIn 0.2s ease-out;
+    }
+
+    .custom-input-container {
+      position: relative;
+      font-family: var(--font-body);
+      
+      .input-char {
+        width: 80px;
+        height: 42px;
+        padding: 0 14px;
+        background: var(--input-bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text);
+        font-size: 13px;
+        outline: none;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        
+        &:focus {
+          border-color: var(--accent);
+          box-shadow: 0 0 0 2px var(--accent-light);
+        }
+      }
+
+      .custom-input-label {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 13px;
+        color: var(--text-muted);
+        pointer-events: none;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        background: var(--panel-bg);
+        padding: 0 4px;
+        z-index: 1;
+      }
+
+      /* Float standard input label */
+      &:focus-within .custom-input-label,
+      &.has-value .custom-input-label {
+        top: 0;
+        font-size: 10px;
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      &.has-error {
+        .input-char {
+          border-color: var(--danger);
+          box-shadow: 0 0 0 2px var(--danger-border-opacity);
+        }
+        .custom-input-label {
+          color: var(--danger) !important;
+        }
+      }
     }
 
     .field-label {
@@ -353,6 +405,13 @@ export class ToolbarComponent {
   readonly customChar = input.required<string>();
   readonly customCharError = input.required<string | null>();
 
+  readonly delimiterOptions = computed(() => [
+    { value: 'comma', label: this.ts.t().comma },
+    { value: 'semicolon', label: this.ts.t().semicolon },
+    { value: 'tab', label: this.ts.t().tab },
+    { value: 'custom', label: this.ts.t().custom }
+  ]);
+
   @ViewChild('customInput') set customInput(element: ElementRef<HTMLInputElement> | undefined) {
     if (element) {
       // Focus and highlight text automatically when the custom input mounts
@@ -390,8 +449,7 @@ export class ToolbarComponent {
     return path.split('/').pop() || path;
   }
 
-  onKindSelect(event: Event): void {
-    const val = (event.target as HTMLSelectElement).value as any;
+  onKindSelect(val: any): void {
     this.delimiterKindChange.emit(val);
   }
 
