@@ -22,7 +22,8 @@ const translations = {
     themeLight: 'Light Theme',
     themeDark: 'Dark Theme',
     themeToggle: 'Toggle Theme',
-    langToggle: 'Language'
+    langToggle: 'Language',
+    dropOverlay: 'Drop file here to open'
   },
   es: {
     openFile: 'Abrir archivo',
@@ -43,7 +44,8 @@ const translations = {
     themeLight: 'Tema Claro',
     themeDark: 'Tema Oscuro',
     themeToggle: 'Cambiar Tema',
-    langToggle: 'Idioma'
+    langToggle: 'Idioma',
+    dropOverlay: 'Suelte el archivo aquí para abrir'
   }
 };
 

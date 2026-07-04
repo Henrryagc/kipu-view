@@ -4,6 +4,7 @@ import {
   WritableSignal,
   computed,
   signal,
+  inject,
 } from '@angular/core';
 import {
   form,
@@ -16,6 +17,7 @@ import { readTextFile, exists } from '@tauri-apps/plugin-fs';
 import { ToolbarComponent } from './components/toolbar/toolbar.component';
 import { StatePanelComponent } from './components/state-panel/state-panel.component';
 import { GridViewComponent } from './components/grid-view/grid-view.component';
+import { TranslationService } from './services/translation.service';
 
 /** Preset delimiter choices shown in the dropdown. 'custom' unlocks the text input. */
 type DelimiterKind = 'comma' | 'semicolon' | 'tab' | 'custom';
@@ -35,11 +37,13 @@ interface DelimiterConfig {
 })
 export class App {
   protected readonly title = signal('kipu-view');
+  readonly ts = inject(TranslationService);
 
   readonly filePath: WritableSignal<string | null> = signal(null);
   readonly fileContent: WritableSignal<string | null> = signal(null);
   readonly isLoading: WritableSignal<boolean> = signal(false);
   readonly appError: WritableSignal<string | null> = signal(null);
+  readonly isDragging = signal(false);
 
   /** Data model handed to the Signal Form. The form derives all state from this signal. */
   private readonly delimiterModel = signal<DelimiterConfig>({
@@ -198,6 +202,40 @@ export class App {
     this.filePath.set(null);
     this.fileContent.set(null);
     this.appError.set(null);
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(true);
+  }
+
+  onDragLeave(event: DragEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+  }
+
+  async onDrop(event: DragEvent): Promise<void> {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDragging.set(false);
+
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      this.isLoading.set(true);
+      this.appError.set(null);
+      try {
+        const content = await file.text();
+        this.filePath.set(file.name);
+        this.fileContent.set(content);
+      } catch (err) {
+        this.appError.set(this.describeError(err, 'The dropped file could not be read.'));
+      } finally {
+        this.isLoading.set(false);
+      }
+    }
   }
 }
 
