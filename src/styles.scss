@@ -77,7 +77,8 @@ html[data-theme="light"] {
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   height: 100%;
@@ -90,4 +91,41 @@ body {
   color: var(--text);
   font-family: var(--font-body);
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Custom Premium Tooltips */
+.custom-tooltip-box {
+  position: absolute;
+  background: var(--panel-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  white-space: normal;
+  word-break: break-word;
+  max-width: 480px;
+  text-align: center;
+  pointer-events: none;
+  z-index: 10000;
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  transition: opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1), transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &.tooltip-top {
+    transform: translateY(4px);
+  }
+
+  &.tooltip-bottom {
+    transform: translateY(-4px);
+  }
+
+  &.tooltip-visible {
+    opacity: 1;
+    transform: translateY(0) !important;
+  }
 }

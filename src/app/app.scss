@@ -136,6 +136,18 @@
   }
 }
 
+.status-path {
+  max-width: 350px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.path-text {
+  font-family: var(--font-body);
+  font-size: 12px;
+}
+
 .status-icon {
   color: var(--text-muted);
   flex-shrink: 0;

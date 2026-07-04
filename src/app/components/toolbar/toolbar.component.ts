@@ -1,10 +1,11 @@
 import { Component, EventEmitter, Output, inject, input, signal } from '@angular/core';
 import { TranslationService } from '../../services/translation.service';
+import { TooltipDirective } from '../../directives/tooltip.directive';
 
 @Component({
   selector: 'app-toolbar',
   standalone: true,
-  imports: [],
+  imports: [TooltipDirective],
   template: `
     <header class="toolbar">
       <!-- Left: File controls & Delimiter configuration -->
@@ -62,12 +63,12 @@ import { TranslationService } from '../../services/translation.service';
 
         <div class="toolbar-actions">
           <!-- Translation Toggle -->
-          <button type="button" class="btn btn-icon-only" (click)="ts.toggleLanguage()" [title]="ts.t().langToggle">
+          <button type="button" class="btn btn-icon-only" (click)="ts.toggleLanguage()" [appTooltip]="ts.t().langToggle" tooltipPosition="bottom">
             <span class="lang-text">{{ ts.currentLanguage() === 'en' ? 'ES' : 'EN' }}</span>
           </button>
 
           <!-- Theme Toggle -->
-          <button type="button" class="btn btn-icon-only" (click)="toggleTheme()" [title]="ts.t().themeToggle">
+          <button type="button" class="btn btn-icon-only" (click)="toggleTheme()" [appTooltip]="ts.t().themeToggle" tooltipPosition="bottom">
             @if (isDark()) {
               <!-- Sun Icon -->
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Output, inject, input } from '@angular/core';
 import { TranslationService } from '../../services/translation.service';
+import { TooltipDirective } from '../../directives/tooltip.directive';
 
 export interface FileTab {
   id: string;
@@ -13,6 +14,7 @@ export interface FileTab {
 @Component({
   selector: 'app-tab-bar',
   standalone: true,
+  imports: [TooltipDirective],
   template: `
     <div class="tab-bar-container">
       <div class="tab-list">
@@ -20,6 +22,8 @@ export interface FileTab {
           <div
             class="tab-item"
             [class.active]="tab.id === activeId()"
+            [appTooltip]="tab.path"
+            tooltipPosition="bottom"
             (click)="selectTab.emit(tab.id)"
           >
             <!-- Tab Icon -->
@@ -29,14 +33,15 @@ export interface FileTab {
             </svg>
 
             <!-- Tab Name -->
-            <span class="tab-name" [title]="tab.path">{{ tab.name }}</span>
+            <span class="tab-name">{{ tab.name }}</span>
 
             <!-- Close Tab Button -->
             <button
               type="button"
               class="btn-close"
               (click)="onCloseClick($event, tab.id)"
-              [title]="ts.t().close"
+              [appTooltip]="ts.t().close"
+              tooltipPosition="bottom"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M18 6 6 18M6 6l12 12"/>
@@ -50,7 +55,8 @@ export interface FileTab {
           type="button"
           class="btn-add"
           (click)="addTab.emit()"
-          [title]="ts.t().newTab"
+          [appTooltip]="ts.t().newTab"
+          tooltipPosition="bottom"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M5 12h14M12 5v14"/>

@@ -2,7 +2,6 @@ import {
   Component,
   ElementRef,
   Signal,
-  WritableSignal,
   afterNextRender,
   computed,
   input,
@@ -11,6 +10,7 @@ import {
   NgZone,
   inject
 } from '@angular/core';
+import { TooltipDirective } from '../../directives/tooltip.directive';
 
 const ROW_HEIGHT = 36; // Premium size: slightly taller rows for better readability
 const OVERSCAN_ROWS = 8;
@@ -18,6 +18,7 @@ const OVERSCAN_ROWS = 8;
 @Component({
   selector: 'app-grid-view',
   standalone: true,
+  imports: [TooltipDirective],
   template: `
     <div class="grid-container">
       <div class="grid-viewport" #gridViewport (scroll)="onGridScroll($event)">
@@ -25,7 +26,7 @@ const OVERSCAN_ROWS = 8;
         <div class="grid-row grid-row-header">
           <div class="cell cell-gutter cell-gutter-header">#</div>
           @for (header of headers(); track $index) {
-            <div class="cell cell-header" [attr.title]="header">{{ header || '\u2014' }}</div>
+            <div class="cell cell-header" [appTooltip]="header" tooltipPosition="bottom">{{ header || '\u2014' }}</div>
           }
         </div>
 
@@ -37,7 +38,7 @@ const OVERSCAN_ROWS = 8;
           <div class="grid-row" [style.height.px]="rowHeight">
             <div class="cell cell-gutter">{{ entry.index + 1 }}</div>
             @for (cell of entry.row; track $index) {
-              <div class="cell" [attr.title]="cell">{{ cell }}</div>
+              <div class="cell">{{ cell }}</div>
             }
           </div>
         }

@@ -14,6 +14,7 @@ import { ToolbarComponent } from './components/toolbar/toolbar.component';
 import { StatePanelComponent } from './components/state-panel/state-panel.component';
 import { GridViewComponent } from './components/grid-view/grid-view.component';
 import { TabBarComponent, FileTab } from './components/tab-bar/tab-bar.component';
+import { TooltipDirective } from './directives/tooltip.directive';
 import { TranslationService } from './services/translation.service';
 
 /** Preset delimiter choices. */
@@ -22,7 +23,7 @@ type DelimiterKind = 'comma' | 'semicolon' | 'tab' | 'custom';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ToolbarComponent, StatePanelComponent, GridViewComponent, TabBarComponent],
+  imports: [ToolbarComponent, StatePanelComponent, GridViewComponent, TabBarComponent, TooltipDirective],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
