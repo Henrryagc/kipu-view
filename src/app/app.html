@@ -1,4 +1,4 @@
-<div class="app-shell" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
+<div class="app-shell">
   <app-toolbar
     [filePath]="filePath()"
     [totalRowCount]="totalRowCount()"
@@ -7,6 +7,16 @@
     (pickFile)="pickFile()"
     (clearFile)="clearFile()"
   />
+
+  @if (tabs().length > 0) {
+    <app-tab-bar
+      [tabs]="tabs()"
+      [activeId]="activeTabId()"
+      (selectTab)="selectTab($event)"
+      (closeTab)="closeTab($event)"
+      (addTab)="pickFile()"
+    />
+  }
 
   @if (appError(); as errorMessage) {
     <div class="banner banner-error" role="alert">

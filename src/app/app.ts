@@ -5,6 +5,9 @@ import {
   computed,
   signal,
   inject,
+  effect,
+  untracked,
+  NgZone,
 } from '@angular/core';
 import {
   form,
@@ -14,9 +17,11 @@ import {
 } from '@angular/forms/signals';
 import { open } from '@tauri-apps/plugin-dialog';
 import { readTextFile, exists } from '@tauri-apps/plugin-fs';
+import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { ToolbarComponent } from './components/toolbar/toolbar.component';
 import { StatePanelComponent } from './components/state-panel/state-panel.component';
 import { GridViewComponent } from './components/grid-view/grid-view.component';
+import { TabBarComponent, FileTab } from './components/tab-bar/tab-bar.component';
 import { TranslationService } from './services/translation.service';
 
 /** Preset delimiter choices shown in the dropdown. 'custom' unlocks the text input. */
@@ -31,17 +36,25 @@ interface DelimiterConfig {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ToolbarComponent, StatePanelComponent, GridViewComponent],
+  imports: [ToolbarComponent, StatePanelComponent, GridViewComponent, TabBarComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
 export class App {
   protected readonly title = signal('kipu-view');
   readonly ts = inject(TranslationService);
+  private readonly zone = inject(NgZone);
 
-  readonly filePath: WritableSignal<string | null> = signal(null);
-  readonly fileContent: WritableSignal<string | null> = signal(null);
-  readonly isLoading: WritableSignal<boolean> = signal(false);
+  readonly tabs = signal<FileTab[]>([]);
+  readonly activeTabId = signal<string | null>(null);
+
+  readonly activeTab = computed(() =>
+    this.tabs().find(t => t.id === this.activeTabId()) || null
+  );
+
+  readonly filePath = computed(() => this.activeTab()?.path ?? null);
+  readonly fileContent = computed(() => this.activeTab()?.content ?? null);
+  readonly isLoading = signal(false);
   readonly appError: WritableSignal<string | null> = signal(null);
   readonly isDragging = signal(false);
 
@@ -50,6 +63,61 @@ export class App {
     kind: 'comma',
     customChar: '',
   });
+
+  constructor() {
+    // 1. Sync Active Tab configuration TO delimiterModel when active tab switches
+    effect(() => {
+      const activeId = this.activeTabId();
+      const active = untracked(() => this.activeTab());
+      if (active) {
+        untracked(() => {
+          this.delimiterModel.set({
+            kind: active.delimiterKind,
+            customChar: active.customChar,
+          });
+        });
+      }
+    });
+
+    // 2. Sync delimiterModel changes BACK to active tab properties, with equality guard to prevent infinite loops
+    effect(() => {
+      const model = this.delimiterModel();
+      const activeId = this.activeTabId();
+      if (activeId) {
+        untracked(() => {
+          const list = this.tabs();
+          const currentTab = list.find(t => t.id === activeId);
+          if (currentTab && (currentTab.delimiterKind !== model.kind || currentTab.customChar !== model.customChar)) {
+            this.tabs.update(tabsList =>
+              tabsList.map(t =>
+                t.id === activeId
+                  ? { ...t, delimiterKind: model.kind, customChar: model.customChar }
+                  : t
+              )
+            );
+          }
+        });
+      }
+    });
+
+    // 3. Listen to Tauri native window drag-and-drop events
+    if (typeof window !== 'undefined') {
+      getCurrentWebview().onDragDropEvent((event) => {
+        this.zone.run(() => {
+          if (event.payload.type === 'enter' || event.payload.type === 'over') {
+            this.isDragging.set(true);
+          } else if (event.payload.type === 'leave') {
+            this.isDragging.set(false);
+          } else if (event.payload.type === 'drop') {
+            this.isDragging.set(false);
+            if (event.payload.paths.length > 0) {
+              this.loadFile(event.payload.paths[0]);
+            }
+          }
+        });
+      });
+    }
+  }
 
   /**
    * Signal Form for the delimiter configuration. `required` + `maxLength` only apply
@@ -205,8 +273,19 @@ export class App {
       }
 
       const content = await readTextFile(path);
-      this.filePath.set(path);
-      this.fileContent.set(content);
+      const fileName = path.split('/').pop() || path;
+
+      const newTab: FileTab = {
+        id: crypto.randomUUID(),
+        name: fileName,
+        path: path,
+        content: content,
+        delimiterKind: 'comma',
+        customChar: ''
+      };
+
+      this.tabs.update(list => [...list, newTab]);
+      this.activeTabId.set(newTab.id);
     } catch (err) {
       this.appError.set(
         this.describeError(err, 'The selected file could not be read.'),
@@ -222,43 +301,33 @@ export class App {
     return fallback;
   }
 
-  clearFile(): void {
-    this.filePath.set(null);
-    this.fileContent.set(null);
+  selectTab(id: string): void {
+    this.activeTabId.set(id);
     this.appError.set(null);
   }
 
-  onDragOver(event: DragEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.isDragging.set(true);
-  }
+  closeTab(tabId: string): void {
+    const list = this.tabs();
+    const index = list.findIndex(t => t.id === tabId);
+    if (index === -1) return;
 
-  onDragLeave(event: DragEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-    this.isDragging.set(false);
-  }
+    const newTabs = list.filter(t => t.id !== tabId);
+    this.tabs.set(newTabs);
 
-  async onDrop(event: DragEvent): Promise<void> {
-    event.preventDefault();
-    event.stopPropagation();
-    this.isDragging.set(false);
-
-    const files = event.dataTransfer?.files;
-    if (files && files.length > 0) {
-      const file = files[0];
-      this.isLoading.set(true);
-      this.appError.set(null);
-      try {
-        const content = await file.text();
-        this.filePath.set(file.name);
-        this.fileContent.set(content);
-      } catch (err) {
-        this.appError.set(this.describeError(err, 'The dropped file could not be read.'));
-      } finally {
-        this.isLoading.set(false);
+    if (this.activeTabId() === tabId) {
+      if (newTabs.length > 0) {
+        const nextActiveIndex = Math.min(index, newTabs.length - 1);
+        this.activeTabId.set(newTabs[nextActiveIndex].id);
+      } else {
+        this.activeTabId.set(null);
       }
+    }
+  }
+
+  clearFile(): void {
+    const activeId = this.activeTabId();
+    if (activeId) {
+      this.closeTab(activeId);
     }
   }
 }

@@ -26,7 +26,8 @@ const translations = {
     dropOverlay: 'Drop file here to open',
     columns: 'columns',
     size: 'Size',
-    delimiter: 'Delimiter'
+    delimiter: 'Delimiter',
+    newTab: 'New Tab'
   },
   es: {
     openFile: 'Abrir archivo',
@@ -51,7 +52,8 @@ const translations = {
     dropOverlay: 'Suelte el archivo aquí para abrir',
     columns: 'columnas',
     size: 'Tamaño',
-    delimiter: 'Delimitador'
+    delimiter: 'Delimitador',
+    newTab: 'Nueva pestaña'
   }
 };
 
