@@ -40,40 +40,25 @@ import { TranslationService } from '../../services/translation.service';
             </div>
           </label>
 
-          @if (delimiterKind() === 'custom') {
-            <div class="field-custom">
-              <label class="field">
-                <span class="field-label">{{ ts.t().character }}</span>
-                <input class="input input-char" type="text" placeholder="|" [value]="customChar()" (input)="onCharInput($event)" />
-              </label>
+        @if (delimiterKind() === 'custom') {
+          <div class="field-custom">
+            <label class="field">
+              <span class="field-label">{{ ts.t().character }}</span>
+              <input class="input input-char" type="text" placeholder="|" [class.input-error]="customCharError()" [value]="customChar()" (input)="onCharInput($event)" />
+            </label>
 
-              @if (customCharError()) {
-                <span class="field-error">
-                  {{ customCharError() }}
-                </span>
-              }
-            </div>
-          }
-        </div>
+            @if (customCharError()) {
+              <span class="field-error">
+                {{ customCharError() }}
+              </span>
+            }
+          </div>
+        }
       </div>
+    </div>
 
       <!-- Right: Settings & Readouts -->
       <div class="toolbar-right">
-        @if (filePath(); as path) {
-          <div class="readout">
-            <span class="readout-path" [title]="path">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline-icon">
-                <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
-                <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
-              </svg>
-              {{ getFileName(path) }}
-            </span>
-            <span class="readout-count">
-              <strong>{{ totalRowCount() }}</strong> {{ ts.t().rows }}
-            </span>
-          </div>
-          <div class="divider"></div>
-        }
 
         <div class="toolbar-actions">
           <!-- Translation Toggle -->
@@ -104,9 +89,12 @@ import { TranslationService } from '../../services/translation.service';
     :host {
       display: block;
       width: 100%;
+      position: relative;
+      z-index: 30;
     }
 
     .toolbar {
+      position: relative;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -154,6 +142,7 @@ import { TranslationService } from '../../services/translation.service';
     }
 
     .field-custom {
+      position: relative;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -169,12 +158,27 @@ import { TranslationService } from '../../services/translation.service';
     }
 
     .field-error {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      white-space: nowrap;
       font-size: 11px;
       color: var(--danger);
-      background: var(--danger-bg-opacity);
-      border: 1px solid var(--danger-border-opacity);
-      padding: 2px 8px;
-      border-radius: 4px;
+      background: var(--danger-bg-solid);
+      border: 1px solid var(--danger);
+      padding: 6px 12px;
+      border-radius: 6px;
+      z-index: 100;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .input.input-error {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 2px var(--danger-border-opacity);
+      &:focus-visible {
+        border-color: var(--danger);
+        box-shadow: 0 0 0 3px var(--danger-border-opacity);
+      }
     }
 
     .btn {
