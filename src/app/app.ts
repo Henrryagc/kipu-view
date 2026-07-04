@@ -39,6 +39,9 @@ export class App {
     this.tabs().find(t => t.id === this.activeTabId()) || null
   );
 
+  readonly defaultDelimiterKind = signal<DelimiterKind>('comma');
+  readonly defaultCustomChar = signal<string>('');
+
   readonly filePath = computed(() => this.activeTab()?.path ?? null);
   readonly fileContent = computed(() => this.activeTab()?.content ?? null);
 
@@ -92,17 +95,18 @@ export class App {
   }
 
   readonly delimiterKind: Signal<DelimiterKind> = computed(
-    () => this.activeTab()?.delimiterKind ?? 'comma'
+    () => this.activeTab()?.delimiterKind ?? this.defaultDelimiterKind()
   );
 
   readonly customChar: Signal<string> = computed(
-    () => this.activeTab()?.customChar ?? ''
+    () => this.activeTab()?.customChar ?? this.defaultCustomChar()
   );
 
   readonly customCharError: Signal<string | null> = computed(() => {
     const active = this.activeTab();
-    if (!active || active.delimiterKind !== 'custom') return null;
-    const char = active.customChar;
+    const currentKind = active ? active.delimiterKind : this.defaultDelimiterKind();
+    if (currentKind !== 'custom') return null;
+    const char = active ? active.customChar : this.defaultCustomChar();
     if (char.length === 0) return this.ts.t().errorSeparator;
     if (char.length > 1) return this.ts.t().errorLength;
     return null;
@@ -114,6 +118,8 @@ export class App {
       this.tabs.update(list =>
         list.map(t => t.id === activeId ? { ...t, delimiterKind: kind } : t)
       );
+    } else {
+      this.defaultDelimiterKind.set(kind);
     }
   }
 
@@ -123,6 +129,8 @@ export class App {
       this.tabs.update(list =>
         list.map(t => t.id === activeId ? { ...t, customChar: char } : t)
       );
+    } else {
+      this.defaultCustomChar.set(char);
     }
   }
 
@@ -265,8 +273,8 @@ export class App {
         name: fileName,
         path: path,
         content: content,
-        delimiterKind: 'comma',
-        customChar: ''
+        delimiterKind: this.defaultDelimiterKind(),
+        customChar: this.defaultCustomChar()
       };
 
       this.tabs.update(list => [...list, newTab]);

@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, inject, input, signal } from '@angular/core';
+import { Component, EventEmitter, Output, inject, input, signal, ViewChild, ElementRef } from '@angular/core';
 import { TranslationService } from '../../services/translation.service';
 import { TooltipDirective } from '../../directives/tooltip.directive';
 
@@ -32,11 +32,11 @@ import { TooltipDirective } from '../../directives/tooltip.directive';
           <label class="field">
             <span class="field-label">{{ ts.t().separator }}</span>
             <div class="select-wrapper">
-              <select class="select" [value]="delimiterKind()" (change)="onKindSelect($event)">
-                <option value="comma">{{ ts.t().comma }}</option>
-                <option value="semicolon">{{ ts.t().semicolon }}</option>
-                <option value="tab">{{ ts.t().tab }}</option>
-                <option value="custom">{{ ts.t().custom }}</option>
+              <select class="select" (change)="onKindSelect($event)">
+                <option value="comma" [selected]="delimiterKind() === 'comma'">{{ ts.t().comma }}</option>
+                <option value="semicolon" [selected]="delimiterKind() === 'semicolon'">{{ ts.t().semicolon }}</option>
+                <option value="tab" [selected]="delimiterKind() === 'tab'">{{ ts.t().tab }}</option>
+                <option value="custom" [selected]="delimiterKind() === 'custom'">{{ ts.t().custom }}</option>
               </select>
             </div>
           </label>
@@ -45,7 +45,7 @@ import { TooltipDirective } from '../../directives/tooltip.directive';
           <div class="field-custom">
             <label class="field">
               <span class="field-label">{{ ts.t().character }}</span>
-              <input class="input input-char" type="text" placeholder="|" [class.input-error]="customCharError()" [value]="customChar()" (input)="onCharInput($event)" />
+              <input #customInput class="input input-char" type="text" placeholder="|" [class.input-error]="customCharError()" [value]="customChar()" (input)="onCharInput($event)" />
             </label>
 
             @if (customCharError()) {
@@ -352,6 +352,16 @@ export class ToolbarComponent {
   readonly delimiterKind = input.required<'comma' | 'semicolon' | 'tab' | 'custom'>();
   readonly customChar = input.required<string>();
   readonly customCharError = input.required<string | null>();
+
+  @ViewChild('customInput') set customInput(element: ElementRef<HTMLInputElement> | undefined) {
+    if (element) {
+      // Focus and highlight text automatically when the custom input mounts
+      setTimeout(() => {
+        element.nativeElement.focus();
+        element.nativeElement.select();
+      });
+    }
+  }
 
   @Output() readonly pickFile = new EventEmitter<void>();
   @Output() readonly clearFile = new EventEmitter<void>();
