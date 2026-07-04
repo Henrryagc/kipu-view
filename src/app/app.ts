@@ -1,15 +1,11 @@
 import {
   Component,
-  ElementRef,
   Signal,
   WritableSignal,
-  afterNextRender,
   computed,
   signal,
-  viewChild,
 } from '@angular/core';
 import {
-  FormField,
   form,
   required,
   maxLength,
@@ -17,6 +13,9 @@ import {
 } from '@angular/forms/signals';
 import { open } from '@tauri-apps/plugin-dialog';
 import { readTextFile, exists } from '@tauri-apps/plugin-fs';
+import { ToolbarComponent } from './components/toolbar/toolbar.component';
+import { StatePanelComponent } from './components/state-panel/state-panel.component';
+import { GridViewComponent } from './components/grid-view/grid-view.component';
 
 /** Preset delimiter choices shown in the dropdown. 'custom' unlocks the text input. */
 type DelimiterKind = 'comma' | 'semicolon' | 'tab' | 'custom';
@@ -27,21 +26,15 @@ interface DelimiterConfig {
   customChar: string;
 }
 
-/** Height (px) of a single data row. Kept constant so virtual scrolling math is trivial. */
-const ROW_HEIGHT = 32;
-/** Extra rows rendered above/below the viewport so fast scrolling doesn't show blank gaps. */
-const OVERSCAN_ROWS = 8;
-
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [FormField],
+  imports: [ToolbarComponent, StatePanelComponent, GridViewComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
 export class App {
   protected readonly title = signal('kipu-view');
-
 
   readonly filePath: WritableSignal<string | null> = signal(null);
   readonly fileContent: WritableSignal<string | null> = signal(null);
@@ -77,11 +70,6 @@ export class App {
   readonly delimiterKind: Signal<DelimiterKind> = computed(
     () => this.delimiterModel().kind,
   );
-
-  // ---------------------------------------------------------------------
-  // Parsing (derived entirely from signals — no re-read from the native layer
-  // when the user only changes the delimiter)
-  // ---------------------------------------------------------------------
 
   /** Resolves the dropdown + custom input into the actual separator character(s). */
   private readonly effectiveDelimiter: Signal<string | null> = computed(() => {
@@ -143,72 +131,9 @@ export class App {
     this.parsedRows().slice(1),
   );
 
-  // ---------------------------------------------------------------------
-  // Lightweight manual virtual scrolling (no extra dependency required)
-  // ---------------------------------------------------------------------
-
-  private readonly gridViewport =
-    viewChild<ElementRef<HTMLDivElement>>('gridViewport');
-
-  private readonly scrollTop = signal(0);
-  private readonly viewportHeight = signal(600);
-
-  readonly rowHeight = ROW_HEIGHT;
-
-  private readonly startIndex: Signal<number> = computed(() => {
-    const raw = Math.floor(this.scrollTop() / ROW_HEIGHT) - OVERSCAN_ROWS;
-    return Math.max(0, raw);
-  });
-
-  private readonly endIndex: Signal<number> = computed(() => {
-    const visibleCount = Math.ceil(this.viewportHeight() / ROW_HEIGHT);
-    const raw = this.startIndex() + visibleCount + OVERSCAN_ROWS * 2;
-    return Math.min(this.tableRows().length, raw);
-  });
-
-  readonly visibleRows: Signal<{ row: string[]; index: number }[]> = computed(
-    () => {
-      const start = this.startIndex();
-      const end = this.endIndex();
-      return this.tableRows()
-        .slice(start, end)
-        .map((row, offset) => ({ row, index: start + offset }));
-    },
-  );
-
-  readonly topSpacerHeight: Signal<number> = computed(
-    () => this.startIndex() * ROW_HEIGHT,
-  );
-
-  readonly bottomSpacerHeight: Signal<number> = computed(
-    () => (this.tableRows().length - this.endIndex()) * ROW_HEIGHT,
-  );
-
   readonly totalRowCount: Signal<number> = computed(
     () => this.tableRows().length,
   );
-
-  constructor() {
-    // Measure the viewport once it exists, and keep it in sync on resize.
-    afterNextRender(() => {
-      const el = this.gridViewport()?.nativeElement;
-      if (!el) return;
-
-      this.viewportHeight.set(el.clientHeight);
-
-      const observer = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          this.viewportHeight.set(entry.contentRect.height);
-        }
-      });
-      observer.observe(el);
-    });
-  }
-
-  onGridScroll(event: Event): void {
-    const target = event.target as HTMLDivElement;
-    this.scrollTop.set(target.scrollTop);
-  }
 
   // ---------------------------------------------------------------------
   // File selection + reading
@@ -234,7 +159,6 @@ export class App {
     }
 
     if (!selected) {
-      // User cancelled the dialog — leave the current state untouched.
       return;
     }
 
@@ -255,7 +179,6 @@ export class App {
       const content = await readTextFile(path);
       this.filePath.set(path);
       this.fileContent.set(content);
-      this.scrollTop.set(0);
     } catch (err) {
       this.appError.set(
         this.describeError(err, 'The selected file could not be read.'),
@@ -275,6 +198,6 @@ export class App {
     this.filePath.set(null);
     this.fileContent.set(null);
     this.appError.set(null);
-    this.scrollTop.set(0);
   }
 }
+

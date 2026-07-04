@@ -1,1 +1,91 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  // Theme: Dark (Default)
+  --bg: linear-gradient(135deg, #0b0c10 0%, #151821 100%);
+  --panel-glass: rgba(20, 23, 31, 0.65);
+  --border-glass: rgba(255, 255, 255, 0.07);
+  --border: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.15);
+  --border-dim: rgba(255, 255, 255, 0.04);
+  --text: #f0f3f6;
+  --text-muted: #8b949e;
+  --text-cell: #d9e1e8;
+  --accent: #64ffda;
+  --accent-dim: #00bfa5;
+  --accent-gradient: linear-gradient(135deg, #64ffda 0%, #00bfa5 100%);
+  --accent-gradient-opacity: rgba(100, 255, 218, 0.1);
+  --accent-border-opacity: rgba(100, 255, 218, 0.2);
+  --accent-shadow: 0 4px 14px rgba(0, 191, 165, 0.2);
+  --accent-shadow-hover: 0 6px 20px rgba(0, 191, 165, 0.35);
+  --accent-focus-shadow: rgba(100, 255, 218, 0.25);
+  --btn-primary-text: #0b0c10;
+  --header-bg: rgba(20, 23, 31, 0.85);
+  --row-hover: rgba(100, 255, 218, 0.04);
+  --gutter-bg: rgba(28, 32, 43, 0.5);
+  --input-bg: rgba(15, 17, 23, 0.7);
+  --panel-hover: rgba(255, 255, 255, 0.05);
+  --danger: #ff6b6b;
+  --danger-bg-opacity: rgba(255, 107, 107, 0.1);
+  --danger-border-opacity: rgba(255, 107, 107, 0.2);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
+  --shadow-premium: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+  --font-display: 'JetBrains Mono', monospace;
+  --font-body: 'Inter', sans-serif;
+}
+
+html[data-theme="light"] {
+  // Theme: Light Override
+  --bg: linear-gradient(135deg, #f5f7fb 0%, #e4e9f0 100%);
+  --panel-glass: rgba(255, 255, 255, 0.75);
+  --border-glass: rgba(0, 0, 0, 0.08);
+  --border: rgba(0, 0, 0, 0.06);
+  --border-strong: rgba(0, 0, 0, 0.14);
+  --border-dim: rgba(0, 0, 0, 0.04);
+  --text: #1d2129;
+  --text-muted: #5e6675;
+  --text-cell: #2c313d;
+  --accent: #00796b;
+  --accent-dim: #004d40;
+  --accent-gradient: linear-gradient(135deg, #009688 0%, #00796b 100%);
+  --accent-gradient-opacity: rgba(0, 150, 136, 0.08);
+  --accent-border-opacity: rgba(0, 150, 136, 0.15);
+  --accent-shadow: 0 4px 12px rgba(0, 121, 107, 0.15);
+  --accent-shadow-hover: 0 6px 18px rgba(0, 121, 107, 0.25);
+  --accent-focus-shadow: rgba(0, 150, 136, 0.25);
+  --btn-primary-text: #ffffff;
+  --header-bg: rgba(255, 255, 255, 0.88);
+  --row-hover: rgba(0, 150, 136, 0.05);
+  --gutter-bg: rgba(240, 243, 248, 0.7);
+  --input-bg: rgba(255, 255, 255, 0.9);
+  --panel-hover: rgba(0, 0, 0, 0.04);
+  --danger: #d32f2f;
+  --danger-bg-opacity: rgba(211, 47, 47, 0.08);
+  --danger-border-opacity: rgba(211, 47, 47, 0.15);
+  --scrollbar-thumb: rgba(0, 0, 0, 0.15);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
+  --shadow-premium: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}

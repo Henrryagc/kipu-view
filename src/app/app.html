@@ -1,88 +1,29 @@
 <div class="app-shell">
-  <header class="toolbar">
-    <div class="toolbar-group">
-      <button type="button" class="btn btn-primary" (click)="pickFile()">
-        Open file
-      </button>
-
-      @if (filePath()) {
-        <button type="button" class="btn btn-ghost" (click)="clearFile()">
-          Close
-        </button>
-      }
-    </div>
-
-    <div class="toolbar-group">
-      <label class="field">
-        <span class="field-label">Separator</span>
-        <select class="select" [formField]="delimiterForm.kind">
-          <option value="comma">Comma ,</option>
-          <option value="semicolon">Semicolon ;</option>
-          <option value="tab">Tab</option>
-          <option value="custom">Custom&hellip;</option>
-        </select>
-      </label>
-
-      @if (delimiterKind() === 'custom') {
-        <label class="field">
-          <span class="field-label">Character</span>
-          <input class="input input-char" type="text" placeholder="|" [formField]="delimiterForm.customChar" />
-        </label>
-
-        @if (delimiterForm.customChar().invalid() && delimiterForm.customChar().touched()) {
-          <span class="field-error">
-            {{ delimiterForm.customChar().errors()[0]?.message }}
-          </span>
-        }
-      }
-    </div>
-
-    <div class="toolbar-group toolbar-readout">
-      @if (filePath(); as path) {
-        <span class="readout-path" [title]="path">{{ path }}</span>
-        <span class="readout-count">{{ totalRowCount() }} rows</span>
-      }
-    </div>
-  </header>
+  <app-toolbar
+    [filePath]="filePath()"
+    [totalRowCount]="totalRowCount()"
+    [delimiterForm]="delimiterForm"
+    [delimiterKind]="delimiterKind()"
+    (pickFile)="pickFile()"
+    (clearFile)="clearFile()"
+  />
 
   @if (appError(); as errorMessage) {
     <div class="banner banner-error" role="alert">
-      {{ errorMessage }}
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="banner-icon">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span class="error-text">{{ errorMessage }}</span>
     </div>
   }
 
   <main class="content">
-    @if (isLoading()) {
-      <div class="state-panel">
-        <span class="state-label">Reading file&hellip;</span>
-      </div>
-    } @else if (!fileContent()) {
-      <div class="state-panel">
-        <span class="state-label">No file loaded</span>
-        <span class="state-hint">Open a .csv, .tsv, .txt, or .dat file to view its contents.</span>
-      </div>
+    @if (isLoading() || !fileContent()) {
+      <app-state-panel [isLoading]="isLoading()" />
     } @else {
-      <div class="grid-viewport" #gridViewport (scroll)="onGridScroll($event)">
-        <div class="grid-row grid-row-header">
-          <div class="cell cell-gutter cell-gutter-header">#</div>
-          @for (header of tableHeaders(); track $index) {
-            <div class="cell cell-header">{{ header || '\u2014' }}</div>
-          }
-        </div>
-
-        <div class="grid-spacer" [style.height.px]="topSpacerHeight()"></div>
-
-        @for (entry of visibleRows(); track entry.index) {
-          <div class="grid-row" [style.height.px]="rowHeight">
-            <div class="cell cell-gutter">{{ entry.index + 1 }}</div>
-            @for (cell of entry.row; track $index) {
-              <div class="cell">{{ cell }}</div>
-            }
-          </div>
-        }
-
-        <div class="grid-spacer" [style.height.px]="bottomSpacerHeight()"></div>
-      </div>
+      <app-grid-view [headers]="tableHeaders()" [rows]="tableRows()" />
     }
   </main>
 </div>
