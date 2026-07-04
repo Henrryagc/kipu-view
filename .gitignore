@@ -42,3 +42,10 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Tauri
+/src-tauri/target
+*Cargo.lock
+*bun.lock
+*package-lock.json
+*pnpm-lock.yaml

@@ -1,0 +1,254 @@
+// ---------------------------------------------------------------------------
+// Design tokens
+// A quiet "lab instrument" palette: graphite surfaces, bone-white text, and a
+// single teal accent reserved for the row gutter and focus states, so the
+// data itself stays the most prominent thing on screen.
+// ---------------------------------------------------------------------------
+:host {
+    --bg: #15171b;
+    --panel: #1d2026;
+    --panel-alt: #242833;
+    --border: #2e333d;
+    --text: #e7e5de;
+    --text-muted: #8891a0;
+    --accent: #4fd1c5;
+    --accent-dim: #2e7d77;
+    --danger: #e2725b;
+    --danger-bg: #2a1c19;
+
+    --font-display: 'IBM Plex Mono', 'SFMono-Regular', ui-monospace, monospace;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+    display: block;
+    height: 100vh;
+    color: var(--text);
+    font-family: var(--font-body);
+    background: var(--bg);
+}
+
+.app-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+// ---------------------------------------------------------------------------
+// Toolbar
+// ---------------------------------------------------------------------------
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 10px 18px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--accent-dim);
+    flex-shrink: 0;
+}
+
+.toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.toolbar-readout {
+    margin-left: auto;
+    font-family: var(--font-display);
+    font-size: 12px;
+    color: var(--text-muted);
+    gap: 16px;
+}
+
+.readout-path {
+    max-width: 40ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.readout-count {
+    color: var(--accent);
+}
+
+.field {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.field-label {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.field-error {
+    font-size: 12px;
+    color: var(--danger);
+}
+
+.btn {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 7px 14px;
+    border-radius: 5px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+
+.btn-primary {
+    background: var(--accent);
+    color: #0c1412;
+}
+
+.btn-primary:hover {
+    background: #6be0d5;
+}
+
+.btn-ghost {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--text-muted);
+}
+
+.btn-ghost:hover {
+    border-color: var(--text-muted);
+    color: var(--text);
+}
+
+.select,
+.input {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--text);
+    background: var(--panel-alt);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 8px;
+}
+
+.select:focus-visible,
+.input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.input-char {
+    width: 3ch;
+    text-align: center;
+    font-family: var(--font-display);
+}
+
+// ---------------------------------------------------------------------------
+// Banners / states
+// ---------------------------------------------------------------------------
+.banner {
+    padding: 8px 18px;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.banner-error {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border-bottom: 1px solid var(--danger);
+}
+
+.content {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+}
+
+.state-panel {
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-muted);
+}
+
+.state-label {
+    font-family: var(--font-display);
+    font-size: 14px;
+    color: var(--text);
+}
+
+.state-hint {
+    font-size: 13px;
+}
+
+// ---------------------------------------------------------------------------
+// Data grid
+// A manually virtualized list: only rows within (viewport ± overscan) exist
+// in the DOM. Two spacer divs above/below reserve the correct scroll height
+// so the native scrollbar behaves as if every row were rendered.
+// ---------------------------------------------------------------------------
+.grid-viewport {
+    flex: 1;
+    overflow: auto;
+    position: relative;
+}
+
+.grid-row {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+}
+
+.grid-row-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--panel-alt);
+    border-bottom: 2px solid var(--accent-dim);
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.cell {
+    flex: 1 0 160px;
+    min-width: 160px;
+    padding: 0 12px;
+    height: 32px;
+    line-height: 32px;
+    font-family: var(--font-display);
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-right: 1px solid var(--border);
+}
+
+.cell:last-child {
+    border-right: none;
+}
+
+.cell-gutter {
+    flex: 0 0 64px;
+    min-width: 64px;
+    text-align: right;
+    color: var(--accent);
+    background: var(--panel);
+    border-right: 1px solid var(--accent-dim);
+    font-variant-numeric: tabular-nums;
+    padding-right: 14px;
+}
+
+.cell-gutter-header {
+    color: var(--text-muted);
+    background: var(--panel-alt);
+}
+
+.grid-row:hover:not(.grid-row-header) .cell {
+    background: rgba(79, 209, 197, 0.06);
+}
+
+.grid-spacer {
+    width: 100%;
+}
