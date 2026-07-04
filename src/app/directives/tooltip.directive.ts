@@ -16,18 +16,23 @@ export class TooltipDirective implements OnDestroy {
   @Input() tooltipPosition: 'top' | 'bottom' = 'top';
 
   private tooltipEl: HTMLDivElement | null = null;
+  private destroyTimeout: any = null;
+  private tooltipListeners: (() => void)[] = [];
 
   constructor(private el: ElementRef, private renderer: Renderer2) {}
 
   @HostListener('mouseenter')
   onMouseEnter() {
+    this.clearTimeout();
     if (!this.text) return;
-    this.createTooltip();
+    if (!this.tooltipEl) {
+      this.createTooltip();
+    }
   }
 
   @HostListener('mouseleave')
   onMouseLeave() {
-    this.destroyTooltip();
+    this.startTimeout();
   }
 
   @HostListener('click')
@@ -39,10 +44,21 @@ export class TooltipDirective implements OnDestroy {
     this.destroyTooltip();
   }
 
-  private createTooltip() {
-    // Destroy existing tooltip if any
-    this.destroyTooltip();
+  private clearTimeout() {
+    if (this.destroyTimeout) {
+      clearTimeout(this.destroyTimeout);
+      this.destroyTimeout = null;
+    }
+  }
 
+  private startTimeout() {
+    this.clearTimeout();
+    this.destroyTimeout = setTimeout(() => {
+      this.destroyTooltip();
+    }, 150);
+  }
+
+  private createTooltip() {
     // Create tooltip element
     this.tooltipEl = this.renderer.createElement('div');
     this.renderer.addClass(this.tooltipEl, 'custom-tooltip-box');
@@ -53,6 +69,15 @@ export class TooltipDirective implements OnDestroy {
 
     // Append to body so it doesn't get clipped by parent overflow:hidden containers
     this.renderer.appendChild(document.body, this.tooltipEl);
+
+    // Add listeners to tooltip element so hover keeps it alive
+    const enterListener = this.renderer.listen(this.tooltipEl, 'mouseenter', () => {
+      this.clearTimeout();
+    });
+    const leaveListener = this.renderer.listen(this.tooltipEl, 'mouseleave', () => {
+      this.startTimeout();
+    });
+    this.tooltipListeners.push(enterListener, leaveListener);
 
     // Position it relative to the host element
     const hostRect = this.el.nativeElement.getBoundingClientRect();
@@ -82,6 +107,12 @@ export class TooltipDirective implements OnDestroy {
   }
 
   private destroyTooltip() {
+    this.clearTimeout();
+    
+    // Remove listeners
+    this.tooltipListeners.forEach(unlisten => unlisten());
+    this.tooltipListeners = [];
+
     if (this.tooltipEl) {
       this.renderer.removeChild(document.body, this.tooltipEl);
       this.tooltipEl = null;

@@ -110,7 +110,9 @@ body {
   word-break: break-word;
   max-width: 480px;
   text-align: center;
-  pointer-events: none;
+  pointer-events: auto;
+  user-select: text;
+  -webkit-user-select: text;
   z-index: 10000;
   box-shadow: var(--shadow-sm);
   opacity: 0;
