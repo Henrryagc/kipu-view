@@ -5,16 +5,8 @@ import {
   computed,
   signal,
   inject,
-  effect,
-  untracked,
   NgZone,
 } from '@angular/core';
-import {
-  form,
-  required,
-  maxLength,
-  applyWhen,
-} from '@angular/forms/signals';
 import { open } from '@tauri-apps/plugin-dialog';
 import { readTextFile, exists } from '@tauri-apps/plugin-fs';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
@@ -24,14 +16,8 @@ import { GridViewComponent } from './components/grid-view/grid-view.component';
 import { TabBarComponent, FileTab } from './components/tab-bar/tab-bar.component';
 import { TranslationService } from './services/translation.service';
 
-/** Preset delimiter choices shown in the dropdown. 'custom' unlocks the text input. */
+/** Preset delimiter choices. */
 type DelimiterKind = 'comma' | 'semicolon' | 'tab' | 'custom';
-
-/** Backing model for the Signal Form that drives the delimiter configuration. */
-interface DelimiterConfig {
-  kind: DelimiterKind;
-  customChar: string;
-}
 
 @Component({
   selector: 'app-root',
@@ -58,49 +44,8 @@ export class App {
   readonly appError: WritableSignal<string | null> = signal(null);
   readonly isDragging = signal(false);
 
-  /** Data model handed to the Signal Form. The form derives all state from this signal. */
-  private readonly delimiterModel = signal<DelimiterConfig>({
-    kind: 'comma',
-    customChar: '',
-  });
-
   constructor() {
-    // 1. Sync Active Tab configuration TO delimiterModel when active tab switches
-    effect(() => {
-      const activeId = this.activeTabId();
-      const active = untracked(() => this.activeTab());
-      if (active) {
-        untracked(() => {
-          this.delimiterModel.set({
-            kind: active.delimiterKind,
-            customChar: active.customChar,
-          });
-        });
-      }
-    });
-
-    // 2. Sync delimiterModel changes BACK to active tab properties, with equality guard to prevent infinite loops
-    effect(() => {
-      const model = this.delimiterModel();
-      const activeId = this.activeTabId();
-      if (activeId) {
-        untracked(() => {
-          const list = this.tabs();
-          const currentTab = list.find(t => t.id === activeId);
-          if (currentTab && (currentTab.delimiterKind !== model.kind || currentTab.customChar !== model.customChar)) {
-            this.tabs.update(tabsList =>
-              tabsList.map(t =>
-                t.id === activeId
-                  ? { ...t, delimiterKind: model.kind, customChar: model.customChar }
-                  : t
-              )
-            );
-          }
-        });
-      }
-    });
-
-    // 3. Listen to Tauri native window drag-and-drop events
+    // Listen to Tauri native window drag-and-drop events
     if (typeof window !== 'undefined') {
       getCurrentWebview().onDragDropEvent((event) => {
         this.zone.run(() => {
@@ -119,34 +64,47 @@ export class App {
     }
   }
 
-  /**
-   * Signal Form for the delimiter configuration. `required` + `maxLength` only apply
-   * to `customChar` when `kind === 'custom'`, via `applyWhen`.
-   */
-  readonly delimiterForm = form(this.delimiterModel, (path) => {
-    applyWhen(
-      path,
-      ({ valueOf }) => valueOf(path.kind) === 'custom',
-      (customPath) => {
-        required(customPath.customChar, {
-          message: 'Enter a single character to use as the separator.',
-        });
-        maxLength(customPath.customChar, 1, {
-          message: 'Custom separators must be exactly one character.',
-        });
-      },
-    );
+  readonly delimiterKind: Signal<DelimiterKind> = computed(
+    () => this.activeTab()?.delimiterKind ?? 'comma'
+  );
+
+  readonly customChar: Signal<string> = computed(
+    () => this.activeTab()?.customChar ?? ''
+  );
+
+  readonly customCharError: Signal<string | null> = computed(() => {
+    const active = this.activeTab();
+    if (!active || active.delimiterKind !== 'custom') return null;
+    const char = active.customChar;
+    if (char.length === 0) return this.ts.t().errorSeparator;
+    if (char.length > 1) return this.ts.t().errorLength;
+    return null;
   });
 
-  /** Convenience read-only view of the current delimiter kind, for the template. */
-  readonly delimiterKind: Signal<DelimiterKind> = computed(
-    () => this.delimiterModel().kind,
-  );
+  onDelimiterKindChange(kind: DelimiterKind): void {
+    const activeId = this.activeTabId();
+    if (activeId) {
+      this.tabs.update(list =>
+        list.map(t => t.id === activeId ? { ...t, delimiterKind: kind } : t)
+      );
+    }
+  }
+
+  onCustomCharChange(char: string): void {
+    const activeId = this.activeTabId();
+    if (activeId) {
+      this.tabs.update(list =>
+        list.map(t => t.id === activeId ? { ...t, customChar: char } : t)
+      );
+    }
+  }
 
   /** Resolves the dropdown + custom input into the actual separator character(s). */
   private readonly effectiveDelimiter: Signal<string | null> = computed(() => {
-    const { kind, customChar } = this.delimiterModel();
-    switch (kind) {
+    const active = this.activeTab();
+    if (!active) return null;
+    const { delimiterKind, customChar } = active;
+    switch (delimiterKind) {
       case 'comma':
         return ',';
       case 'semicolon':

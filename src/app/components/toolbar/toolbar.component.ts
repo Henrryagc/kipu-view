@@ -1,11 +1,10 @@
 import { Component, EventEmitter, Output, inject, input, signal } from '@angular/core';
-import { FormField } from '@angular/forms/signals';
 import { TranslationService } from '../../services/translation.service';
 
 @Component({
   selector: 'app-toolbar',
   standalone: true,
-  imports: [FormField],
+  imports: [],
   template: `
     <header class="toolbar">
       <!-- Left: File controls & Delimiter configuration -->
@@ -32,7 +31,7 @@ import { TranslationService } from '../../services/translation.service';
           <label class="field">
             <span class="field-label">{{ ts.t().separator }}</span>
             <div class="select-wrapper">
-              <select class="select" [formField]="delimiterForm().kind">
+              <select class="select" [value]="delimiterKind()" (change)="onKindSelect($event)">
                 <option value="comma">{{ ts.t().comma }}</option>
                 <option value="semicolon">{{ ts.t().semicolon }}</option>
                 <option value="tab">{{ ts.t().tab }}</option>
@@ -45,12 +44,12 @@ import { TranslationService } from '../../services/translation.service';
             <div class="field-custom">
               <label class="field">
                 <span class="field-label">{{ ts.t().character }}</span>
-                <input class="input input-char" type="text" placeholder="|" [formField]="delimiterForm().customChar" />
+                <input class="input input-char" type="text" placeholder="|" [value]="customChar()" (input)="onCharInput($event)" />
               </label>
 
-              @if (delimiterForm().customChar().invalid() && delimiterForm().customChar().touched()) {
+              @if (customCharError()) {
                 <span class="field-error">
-                  {{ ts.t().errorLength }}
+                  {{ customCharError() }}
                 </span>
               }
             </div>
@@ -345,11 +344,14 @@ export class ToolbarComponent {
 
   readonly filePath = input.required<string | null>();
   readonly totalRowCount = input.required<number>();
-  readonly delimiterForm = input.required<any>();
-  readonly delimiterKind = input.required<string>();
+  readonly delimiterKind = input.required<'comma' | 'semicolon' | 'tab' | 'custom'>();
+  readonly customChar = input.required<string>();
+  readonly customCharError = input.required<string | null>();
 
   @Output() readonly pickFile = new EventEmitter<void>();
   @Output() readonly clearFile = new EventEmitter<void>();
+  @Output() readonly delimiterKindChange = new EventEmitter<'comma' | 'semicolon' | 'tab' | 'custom'>();
+  @Output() readonly customCharChange = new EventEmitter<string>();
 
   readonly isDark = signal(true);
 
@@ -371,5 +373,15 @@ export class ToolbarComponent {
 
   getFileName(path: string): string {
     return path.split('/').pop() || path;
+  }
+
+  onKindSelect(event: Event): void {
+    const val = (event.target as HTMLSelectElement).value as any;
+    this.delimiterKindChange.emit(val);
+  }
+
+  onCharInput(event: Event): void {
+    const val = (event.target as HTMLInputElement).value;
+    this.customCharChange.emit(val);
   }
 }

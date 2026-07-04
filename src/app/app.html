@@ -2,10 +2,13 @@
   <app-toolbar
     [filePath]="filePath()"
     [totalRowCount]="totalRowCount()"
-    [delimiterForm]="delimiterForm"
     [delimiterKind]="delimiterKind()"
+    [customChar]="customChar()"
+    [customCharError]="customCharError()"
     (pickFile)="pickFile()"
     (clearFile)="clearFile()"
+    (delimiterKindChange)="onDelimiterKindChange($event)"
+    (customCharChange)="onCustomCharChange($event)"
   />
 
   @if (tabs().length > 0) {
