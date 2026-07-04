@@ -2,34 +2,35 @@
 
 :root {
   // Theme: Dark (Default)
-  --bg: linear-gradient(135deg, #0b0c10 0%, #151821 100%);
-  --panel-glass: rgba(20, 23, 31, 0.65);
-  --panel-bg: #14171f;
-  --border-glass: rgba(255, 255, 255, 0.07);
-  --border: rgba(255, 255, 255, 0.06);
-  --border-strong: rgba(255, 255, 255, 0.15);
-  --border-dim: rgba(255, 255, 255, 0.04);
+  // Theme: Softer Dark Theme
+  --bg: linear-gradient(135deg, #1b1e25 0%, #222630 100%);
+  --panel-glass: rgba(37, 41, 52, 0.7);
+  --panel-bg: #252934;
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --border-dim: rgba(255, 255, 255, 0.05);
   --text: #f0f3f6;
   --text-muted: #8b949e;
   --text-cell: #d9e1e8;
-  --accent: #64ffda;
+  --accent: #56ebc6;
   --accent-dim: #00bfa5;
-  --accent-gradient: linear-gradient(135deg, #64ffda 0%, #00bfa5 100%);
-  --accent-gradient-opacity: rgba(100, 255, 218, 0.1);
-  --accent-border-opacity: rgba(100, 255, 218, 0.2);
+  --accent-gradient: linear-gradient(135deg, #56ebc6 0%, #00bfa5 100%);
+  --accent-gradient-opacity: rgba(86, 235, 198, 0.1);
+  --accent-border-opacity: rgba(86, 235, 198, 0.2);
   --accent-shadow: 0 4px 14px rgba(0, 191, 165, 0.2);
   --accent-shadow-hover: 0 6px 20px rgba(0, 191, 165, 0.35);
-  --accent-focus-shadow: rgba(100, 255, 218, 0.25);
-  --btn-primary-text: #0b0c10;
-  --header-bg: rgba(20, 23, 31, 0.85);
-  --row-hover: rgba(100, 255, 218, 0.04);
-  --gutter-bg: rgba(28, 32, 43, 0.5);
-  --input-bg: rgba(15, 17, 23, 0.7);
-  --panel-hover: rgba(255, 255, 255, 0.05);
-  --danger: #ff6b6b;
-  --danger-bg-opacity: rgba(255, 107, 107, 0.1);
-  --danger-border-opacity: rgba(255, 107, 107, 0.2);
-  --danger-bg-solid: #1e1215;
+  --accent-focus-shadow: rgba(86, 235, 198, 0.25);
+  --btn-primary-text: #1b1e25;
+  --header-bg: rgba(37, 41, 52, 0.85);
+  --row-hover: rgba(86, 235, 198, 0.04);
+  --gutter-bg: rgba(37, 41, 52, 0.45);
+  --input-bg: rgba(27, 30, 38, 0.8);
+  --panel-hover: rgba(255, 255, 255, 0.06);
+  --danger: #cf6679;
+  --danger-bg-opacity: rgba(207, 102, 121, 0.08);
+  --danger-border-opacity: rgba(207, 102, 121, 0.15);
+  --danger-bg-solid: #2d1f23;
   --scrollbar-thumb: rgba(255, 255, 255, 0.15);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
   --shadow-premium: 0 8px 32px rgba(0, 0, 0, 0.35);

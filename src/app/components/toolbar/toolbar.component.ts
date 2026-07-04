@@ -218,11 +218,11 @@ import { SelectComponent } from '../select/select.component';
       font-size: 11px;
       color: var(--danger);
       background: var(--danger-bg-solid);
-      border: 1px solid var(--danger);
+      border: none;
       padding: 6px 12px;
       border-radius: 6px;
       z-index: 100;
-      box-shadow: var(--shadow-sm);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), 0 1px 4px rgba(207, 102, 121, 0.15);
     }
 
     .input.input-error {
