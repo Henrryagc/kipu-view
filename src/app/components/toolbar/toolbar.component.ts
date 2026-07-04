@@ -160,6 +160,7 @@ import { SelectComponent } from '../select/select.component';
         color: var(--text);
         font-size: 13px;
         outline: none;
+        text-align: center;
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         
         &:focus {
@@ -170,23 +171,24 @@ import { SelectComponent } from '../select/select.component';
 
       .custom-input-label {
         position: absolute;
-        left: 14px;
+        left: 50%;
         top: 50%;
-        transform: translateY(-50%);
+        transform: translate(-50%, -50%) scale(1);
+        transform-origin: center center;
         font-size: 13px;
         color: var(--text-muted);
         pointer-events: none;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1), color 0.2s ease;
         background: var(--panel-bg);
         padding: 0 4px;
         z-index: 1;
+        white-space: nowrap;
       }
 
       /* Float standard input label */
       &:focus-within .custom-input-label,
       &.has-value .custom-input-label {
-        top: 0;
-        font-size: 10px;
+        transform: translate(-50%, calc(-50% - 21px)) scale(0.8);
         color: var(--accent);
         font-weight: 600;
       }

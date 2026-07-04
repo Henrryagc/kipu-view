@@ -124,11 +124,12 @@ import {
       position: absolute;
       left: 14px;
       top: 50%;
-      transform: translateY(-50%);
+      transform: translateY(-50%) scale(1);
+      transform-origin: left center;
       font-size: 13px;
       color: var(--text-muted);
       pointer-events: none;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1), color 0.2s ease;
       background: var(--panel-bg);
       padding: 0 4px;
       z-index: 1;
@@ -137,8 +138,7 @@ import {
     /* Floating label animation matching material layout */
     .custom-select-container.has-value .custom-select-label,
     .custom-select-container.open .custom-select-label {
-      top: 0;
-      font-size: 10px;
+      transform: translateY(calc(-50% - 21px)) scale(0.8);
       color: var(--accent);
       font-weight: 600;
     }
