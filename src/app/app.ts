@@ -41,6 +41,32 @@ export class App {
 
   readonly filePath = computed(() => this.activeTab()?.path ?? null);
   readonly fileContent = computed(() => this.activeTab()?.content ?? null);
+
+  readonly formattedFilePath = computed(() => {
+    const path = this.filePath();
+    if (!path) return '';
+
+    let formatted = path;
+    const homePattern = /^\/(Users|home)\/[^\/]+/;
+    if (homePattern.test(path)) {
+      formatted = path.replace(homePattern, '~');
+    }
+
+    // Middle truncate if still very long (> 45 chars) to keep the filename fully visible
+    const maxLen = 45;
+    if (formatted.length > maxLen) {
+      const parts = formatted.split('/');
+      if (parts.length > 2) {
+        const fileName = parts.pop()!;
+        const start = parts.slice(0, 2).join('/');
+        formatted = `${start}/.../${fileName}`;
+        if (formatted.length > maxLen) {
+          formatted = `.../${fileName}`;
+        }
+      }
+    }
+    return formatted;
+  });
   readonly isLoading = signal(false);
   readonly appError: WritableSignal<string | null> = signal(null);
   readonly isDragging = signal(false);
