@@ -33,7 +33,7 @@ Your donations help pay for Apple/Windows developer certificates to keep the des
 
 Before getting started, make sure you have the following installed on your system:
 
-1. **Node.js** (v18+) or **Bun** (Recommended)
+1. **Node.js** (v22+) or **Bun** (Recommended)
 2. **Rust & Cargo** (Required for Tauri desktop compilation)
    * Follow the [Tauri Prerequisites Guide](https://v2.tauri.app/start/prerequisites/) for your OS (macOS/Windows/Linux toolchains).
 
