@@ -1,59 +1,104 @@
-# KipuView
+# KipuView 🚀
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.0.5.
+KipuView is a premium, high-performance, cross-platform delimited text parser and grid viewer. Built as a desktop app with **Tauri v2** and **Angular**, it operates as a native standalone application for macOS, Windows, and Linux, and compiles smoothly to run directly in modern web browsers.
 
-## Development server
 
-To start a local development server, run:
+## 💖 Support & Donations
 
-```bash
-ng serve
-```
+KipuView is completely free and open-source under the **MIT License**. If this tool saves you time, prevents browser freezes, or helps your workflow, please consider supporting its ongoing development! 
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Your donations help pay for Apple/Windows developer certificates to keep the desktop apps signed and secure.
 
-## Code scaffolding
+| Platform | Link |
+| :--- | :--- |
+| **GitHub Sponsors** | [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-GitHub-ea4aaa?style=for-the-badge&logo=github-sponsors)](https://github.com/sponsors/YOUR_GITHUB_USERNAME) |
+| **Ko-fi** | [![Ko-fi](https://img.shields.io/badge/Ko--fi-F16061?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/YOUR_KOFI_USERNAME) |
+| **Buy Me A Coffee** | [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/YOUR_USERNAME) |
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+---
 
-```bash
-ng generate component component-name
-```
+## Key Features
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+* **Multi-Tab Workspace**: Open and manage multiple files concurrently in a clean, sandboxed tab bar.
+* **Tauri Native Drag & Drop**: Smoothly drag and drop large files directly into the window from your OS file manager (optimized with zone synchronization).
+* **High Performance Parsing**: High-speed, line-by-line index scanning for large CSV/TSV/TXT payloads, eliminating browser main-thread freezes.
+* **Premium Custom Forms**: Dynamic dropdown selections (`app-select`) and text inputs (`app-input`) featuring hardware-accelerated material outline floating labels.
+* **Custom Tooltip System**: Elegant, glassmorphic tooltips appended to `document.body` that allow hover-keep-alive text selection and copying.
+* **Dual Theme Engine**: Seamless toggle between a premium slate-grey dark mode and clean light mode.
+* **Pre-Load Configuration**: Pre-set your desired separators before loading any files.
 
-```bash
-ng generate --help
-```
+---
 
-## Building
+## 🛠️ Prerequisites
 
-To build the project run:
+Before getting started, make sure you have the following installed on your system:
 
-```bash
-ng build
-```
+1. **Node.js** (v18+) or **Bun** (Recommended)
+2. **Rust & Cargo** (Required for Tauri desktop compilation)
+   * Follow the [Tauri Prerequisites Guide](https://v2.tauri.app/start/prerequisites/) for your OS (macOS/Windows/Linux toolchains).
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+---
 
-## Running unit tests
+## 💻 Local Development
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+### 1. Web Version (Run in Browser/Navigator)
 
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
+To run the application inside a local web browser environment:
 
 ```bash
-ng e2e
+# Install dependencies
+bun install   # or npm install
+
+# Start the Angular development server
+bun run start # or npm run start
+```
+Once started, open your web browser and navigate to **`http://localhost:4200/`**. 
+
+> [!NOTE]
+> When running directly in the browser, native Tauri integrations (such as native file dialogs and OS drag events) are mocked/disabled. Use the web filepicker to open files.
+
+### 2. Desktop Version (Tauri Desktop App)
+
+To launch the native desktop application window:
+
+```bash
+# Start Tauri dev pipeline (launches the local dev server + native wrapper)
+bunx tauri dev # or npx tauri dev
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+---
 
-## Additional Resources
+## 📦 Building for Production
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+### Compile Desktop App (macOS, Windows, Linux)
+
+To compile the production-ready standalone executable for your current OS:
+
+```bash
+# Build the production bundle
+bunx tauri build # or npx tauri build
+```
+This generates:
+* **macOS**: `.app` and `.dmg` installers
+* **Windows**: `.msi` and `.exe` installers
+* **Linux**: `.deb` and `.AppImage` packages
+
+### Compile Web App (for hosting/static servers)
+
+To build the static web assets to host KipuView on a server or CDN:
+
+```bash
+# Compile client-side SPA
+bun run build # or npm run build
+```
+Output files will be generated in the `dist/kipu-view/browser` directory.
+
+---
+
+## 🧪 Testing
+
+To run unit tests utilizing Vitest:
+
+```bash
+bun run test # or npm run test
+```
