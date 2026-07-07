@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "kipu-view",
+        "title": "KipuView",
         "width": 800,
         "height": 600,
         "minWidth": 720,
