@@ -16,10 +16,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest'
-            args: '--target aarch64-apple-darwin' # Build for Apple Silicon Mac
-          - platform: 'macos-latest'
-            args: '--target x86_64-apple-darwin' # Build for Intel Mac
+#          - platform: 'macos-latest'
+#            args: '--target aarch64-apple-darwin' # Build for Apple Silicon Mac
+#          - platform: 'macos-latest'
+#            args: '--target x86_64-apple-darwin' # Build for Intel Mac
           - platform: 'ubuntu-22.04'
             args: ''
           - platform: 'windows-latest'
@@ -72,11 +72,20 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NG_DISABLE_VERSION_CHECK: '1'
         with:
           tagName: ${{ github.ref_name }}
           releaseName: 'kipu-view v__VERSION__'
-          releaseBody: 'See the assets below to install kipu-view on your platform.'
+          releaseBody: |
+            ### 📥 Download & Installation Guide
+
+            Choose the correct file to download from the **Assets** section below based on your operating system and processor type:
+
+            | OS / Platform | CPU / Device Type | File to Download |
+            | :--- | :--- | :--- |
+            | 🪟 **Windows** | **Standard PC (64-bit)** | `kipu-view___VERSION___x64-setup.exe` *(easiest)* or `.msi` |
+            | 🐧 **Linux** | **Ubuntu / Debian / Mint** | `kipu-view___VERSION___amd64.deb` |
+            | 🐧 **Linux** | **Fedora / RedHat** | `kipu-view-__VERSION__-1.x86_64.rpm` |
+            | 🐧 **Linux** | **Any Linux distribution** (Portable) | `kipu-view___VERSION___amd64.AppImage` |
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}

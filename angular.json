@@ -64,6 +64,9 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "port": 4221
+          },
           "configurations": {
             "production": {
               "buildTarget": "kipu-view:build:production"
