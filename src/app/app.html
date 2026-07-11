@@ -81,4 +81,17 @@
       </div>
     </div>
   }
+
+  @if (pendingFile(); as file) {
+    <app-separator-confirm-dialog
+      [confirmMessageText]="confirmMessageText()"
+      [delimiterKind]="confirmDelimiterKind()"
+      [customChar]="confirmCustomChar()"
+      [customCharError]="confirmCustomCharError()"
+      (delimiterKindChange)="confirmDelimiterKind.set($event)"
+      (customCharChange)="confirmCustomChar.set($event)"
+      (confirm)="confirmLoadFile()"
+      (cancel)="cancelLoadFile()"
+    />
+  }
 </div>

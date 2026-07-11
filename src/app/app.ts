@@ -6,6 +6,8 @@ import {
   signal,
   inject,
   NgZone,
+  ViewChild,
+  ElementRef,
 } from '@angular/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { readTextFile, exists } from '@tauri-apps/plugin-fs';
@@ -17,13 +19,15 @@ import { TabBarComponent, FileTab } from './components/tab-bar/tab-bar.component
 import { TooltipDirective } from './directives/tooltip.directive';
 import { TranslationService } from './services/translation.service';
 
+import { SeparatorConfirmDialogComponent } from './components/separator-confirm-dialog/separator-confirm-dialog.component';
+
 /** Preset delimiter choices. */
 type DelimiterKind = 'comma' | 'semicolon' | 'tab' | 'custom';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ToolbarComponent, StatePanelComponent, GridViewComponent, TabBarComponent, TooltipDirective],
+  imports: [ToolbarComponent, StatePanelComponent, GridViewComponent, TabBarComponent, TooltipDirective, SeparatorConfirmDialogComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -73,6 +77,24 @@ export class App {
   readonly isLoading = signal(false);
   readonly appError: WritableSignal<string | null> = signal(null);
   readonly isDragging = signal(false);
+
+  readonly pendingFile = signal<{ path: string; name: string; content: string } | null>(null);
+  readonly confirmDelimiterKind = signal<DelimiterKind>('comma');
+  readonly confirmCustomChar = signal<string>('');
+
+  readonly confirmCustomCharError = computed(() => {
+    if (this.confirmDelimiterKind() !== 'custom') return null;
+    const char = this.confirmCustomChar();
+    if (char.length === 0) return this.ts.t().errorSeparator;
+    if (char.length > 1) return this.ts.t().errorLength;
+    return null;
+  });
+
+  readonly confirmMessageText = computed(() => {
+    const pending = this.pendingFile();
+    if (!pending) return '';
+    return this.ts.t().confirmMessage.replace('{name}', pending.name);
+  });
 
   constructor() {
     // Listen to Tauri native window drag-and-drop events
@@ -268,17 +290,25 @@ export class App {
       const content = await readTextFile(path);
       const fileName = path.split('/').pop() || path;
 
-      const newTab: FileTab = {
-        id: crypto.randomUUID(),
-        name: fileName,
-        path: path,
-        content: content,
-        delimiterKind: this.defaultDelimiterKind(),
-        customChar: this.defaultCustomChar()
-      };
-
-      this.tabs.update(list => [...list, newTab]);
-      this.activeTabId.set(newTab.id);
+      if (this.tabs().length > 0) {
+        // A file is already loaded; show confirmation dialog and pre-select current configuration
+        const active = this.activeTab();
+        this.confirmDelimiterKind.set(active ? active.delimiterKind : this.defaultDelimiterKind());
+        this.confirmCustomChar.set(active ? active.customChar : this.defaultCustomChar());
+        this.pendingFile.set({ path, name: fileName, content });
+      } else {
+        // Load directly
+        const newTab: FileTab = {
+          id: crypto.randomUUID(),
+          name: fileName,
+          path: path,
+          content: content,
+          delimiterKind: this.defaultDelimiterKind(),
+          customChar: this.defaultCustomChar()
+        };
+        this.tabs.update(list => [...list, newTab]);
+        this.activeTabId.set(newTab.id);
+      }
     } catch (err) {
       this.appError.set(
         this.describeError(err, 'The selected file could not be read.'),
@@ -286,6 +316,32 @@ export class App {
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  confirmLoadFile(): void {
+    const pending = this.pendingFile();
+    if (!pending) return;
+
+    if (this.confirmCustomCharError()) {
+      return;
+    }
+
+    const newTab: FileTab = {
+      id: crypto.randomUUID(),
+      name: pending.name,
+      path: pending.path,
+      content: pending.content,
+      delimiterKind: this.confirmDelimiterKind(),
+      customChar: this.confirmCustomChar()
+    };
+
+    this.tabs.update(list => [...list, newTab]);
+    this.activeTabId.set(newTab.id);
+    this.pendingFile.set(null);
+  }
+
+  cancelLoadFile(): void {
+    this.pendingFile.set(null);
   }
 
   private describeError(err: unknown, fallback: string): string {

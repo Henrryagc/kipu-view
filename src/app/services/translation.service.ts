@@ -27,7 +27,11 @@ const translations = {
     columns: 'columns',
     size: 'Size',
     delimiter: 'Delimiter',
-    newTab: 'New Tab'
+    newTab: 'New Tab',
+    confirmTitle: 'Confirm Separator',
+    confirmMessage: 'You are opening the file "{name}". Confirm the separator to use, or select another:',
+    confirmBtn: 'Open File',
+    cancelBtn: 'Cancel'
   },
   es: {
     openFile: 'Abrir archivo',
@@ -53,7 +57,11 @@ const translations = {
     columns: 'columnas',
     size: 'Tamaño',
     delimiter: 'Delimitador',
-    newTab: 'Nueva pestaña'
+    newTab: 'Nueva pestaña',
+    confirmTitle: 'Confirmar Separador',
+    confirmMessage: 'Está abriendo el archivo "{name}". Confirme el separador a usar, o seleccione otro:',
+    confirmBtn: 'Abrir archivo',
+    cancelBtn: 'Cancelar'
   }
 };
 

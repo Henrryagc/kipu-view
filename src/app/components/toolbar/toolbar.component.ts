@@ -1,12 +1,13 @@
-import { Component, EventEmitter, Output, inject, input, signal, ViewChild, ElementRef, computed } from '@angular/core';
+import { Component, EventEmitter, Output, inject, input, signal, computed } from '@angular/core';
 import { TranslationService } from '../../services/translation.service';
 import { TooltipDirective } from '../../directives/tooltip.directive';
 import { SelectComponent } from '../select/select.component';
+import { CustomSeparatorInputComponent } from '../custom-separator-input/custom-separator-input.component';
 
 @Component({
   selector: 'app-toolbar',
   standalone: true,
-  imports: [TooltipDirective, SelectComponent],
+  imports: [TooltipDirective, SelectComponent, CustomSeparatorInputComponent],
   template: `
     <header class="toolbar">
       <!-- Left: File controls & Delimiter configuration -->
@@ -38,18 +39,11 @@ import { SelectComponent } from '../select/select.component';
           />
 
           @if (delimiterKind() === 'custom') {
-            <div class="field-custom">
-              <div class="custom-input-container" [class.has-value]="customChar()" [class.has-error]="customCharError()">
-                <span class="custom-input-label">{{ ts.t().character }}</span>
-                <input #customInput class="input input-char" type="text" placeholder="|" [value]="customChar()" (input)="onCharInput($event)" />
-
-                @if (customCharError()) {
-                  <span class="field-error">
-                    {{ customCharError() }}
-                  </span>
-                }
-              </div>
-            </div>
+            <app-custom-separator-input
+              [customChar]="customChar()"
+              [customCharError]="customCharError()"
+              (customCharChange)="customCharChange.emit($event)"
+            />
           }
         </div>
     </div>
@@ -414,16 +408,6 @@ export class ToolbarComponent {
     { value: 'custom', label: this.ts.t().custom }
   ]);
 
-  @ViewChild('customInput') set customInput(element: ElementRef<HTMLInputElement> | undefined) {
-    if (element) {
-      // Focus and highlight text automatically when the custom input mounts
-      setTimeout(() => {
-        element.nativeElement.focus();
-        element.nativeElement.select();
-      });
-    }
-  }
-
   @Output() readonly pickFile = new EventEmitter<void>();
   @Output() readonly clearFile = new EventEmitter<void>();
   @Output() readonly delimiterKindChange = new EventEmitter<'comma' | 'semicolon' | 'tab' | 'custom'>();
@@ -453,10 +437,5 @@ export class ToolbarComponent {
 
   onKindSelect(val: any): void {
     this.delimiterKindChange.emit(val);
-  }
-
-  onCharInput(event: Event): void {
-    const val = (event.target as HTMLInputElement).value;
-    this.customCharChange.emit(val);
   }
 }
