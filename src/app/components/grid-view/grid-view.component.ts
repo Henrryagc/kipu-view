@@ -10,7 +10,9 @@ import {
   NgZone,
   inject,
   effect,
-  OnDestroy
+  OnDestroy,
+  EventEmitter,
+  Output
 } from '@angular/core';
 import { TooltipDirective } from '../../directives/tooltip.directive';
 import { TranslationService } from '../../services/translation.service';
@@ -76,14 +78,49 @@ const OVERSCAN_ROWS = 8;
             @for (cell of entry.row; track $index) {
               <div 
                 class="cell"
+                [class.editing]="isEditing(entry.index, $index)"
+                [class.has-expand-btn]="shouldShowExpandBtn(entry.index, $index)"
                 [style.flex]="'0 0 ' + columnWidths()[$index] + 'px'"
                 [style.width.px]="columnWidths()[$index]"
+                (dblclick)="startEdit(entry.index, $index, cell)"
+                (mouseenter)="onCellMouseEnter($event, entry.index, $index)"
+                (mouseleave)="onCellMouseLeave()"
               >
-                <span class="cell-text">
-                  @for (part of getCellParts(cell, entry.index, $index); track $index) {
-                    <span [class.search-highlight]="part.isMatch" [class.search-highlight-active]="part.isActive">{{ part.text }}</span>
+                @if (isEditing(entry.index, $index)) {
+                  <input
+                    #editInput
+                    type="text"
+                    class="cell-edit-input"
+                    [value]="editValue()"
+                    (blur)="commitEdit(entry.index, $index, editInput.value)"
+                    (keydown.enter)="commitEdit(entry.index, $index, editInput.value); editInput.blur()"
+                    (keydown.escape)="cancelEdit(); editInput.blur()"
+                  />
+                } @else {
+                  <span class="cell-text">
+                    @for (part of getCellParts(cell, entry.index, $index); track $index) {
+                      <span [class.search-highlight]="part.isMatch" [class.search-highlight-active]="part.isActive">{{ part.text }}</span>
+                    }
+                  </span>
+                  
+                  <!-- Cell Expand Hover Trigger (only rendered if text overflows) -->
+                  @if (shouldShowExpandBtn(entry.index, $index)) {
+                    <button 
+                      type="button" 
+                      class="cell-expand-btn"
+                      (click)="openDetailDialog(entry.index, $index, cell); $event.stopPropagation()"
+                      [appTooltip]="ts.t().langToggle === 'Language' ? 'Expand Cell' : 'Expandir celda'"
+                      tooltipPosition="top"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 3 21 3 21 9"/>
+                        <polyline points="9 21 3 21 3 15"/>
+                        <line x1="21" y1="3" x2="14" y2="10"/>
+                        <line x1="3" y1="21" x2="10" y2="14"/>
+                      </svg>
+                    </button>
                   }
-                </span>
+                }
               </div>
             }
           </div>
@@ -93,6 +130,58 @@ const OVERSCAN_ROWS = 8;
         <div class="grid-spacer" [style.height.px]="bottomSpacerHeight()"></div>
       </div>
     </div>
+
+    <!-- Cell Detail Modal Dialog -->
+    @if (activeDetailCell(); as detail) {
+      <div class="cell-detail-overlay" (click)="closeDetailDialog()">
+        <div class="cell-detail-modal animate-scale-in" (click)="$event.stopPropagation()">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="modal-subtitle">Row {{ detail.rowIndex + 1 }} &bull; Column {{ headers()[detail.colIndex] || ('Col ' + (detail.colIndex + 1)) }}</span>
+              <h3 class="modal-title">{{ ts.t().langToggle === 'Language' ? 'Cell Detail Editor' : 'Editor de Detalle de Celda' }}</h3>
+            </div>
+            <button type="button" class="btn-close-modal" (click)="closeDetailDialog()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+          
+          <div class="modal-body">
+            <textarea
+              #detailTextarea
+              class="cell-detail-textarea"
+              [value]="detail.value"
+              placeholder="..."
+              (input)="updateTextareaStats(detailTextarea.value)"
+              (keydown)="onTextareaKeyDown($event, detailTextarea.value)"
+            ></textarea>
+            <div class="modal-body-meta">
+              <span class="textarea-stats">
+                {{ charCount() }} characters &bull; {{ wordCount() }} words
+              </span>
+              <span class="keyboard-hint">
+                @if (ts.currentLanguage() === 'en') {
+                  Press <strong>Ctrl</strong>+<strong>Enter</strong> to save, <strong>Esc</strong> to cancel
+                } @else {
+                  Presione <strong>Ctrl</strong>+<strong>Enter</strong> para guardar, <strong>Esc</strong> para cancelar
+                }
+              </span>
+            </div>
+          </div>
+          
+          <div class="modal-footer">
+            <button type="button" class="btn btn-ghost" (click)="closeDetailDialog()">
+              {{ ts.t().cancelBtn }}
+            </button>
+            <button type="button" class="btn btn-primary" (click)="saveDetailEdit(detailTextarea.value)">
+              {{ ts.t().langToggle === 'Language' ? 'Save Changes' : 'Guardar cambios' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
   `,
   styles: [`
     :host {
@@ -178,6 +267,238 @@ const OVERSCAN_ROWS = 8;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      position: relative;
+
+      &.editing {
+        padding: 0;
+      }
+
+      &.has-expand-btn {
+        .cell-text {
+          padding-right: 20px;
+        }
+        .cell-expand-btn {
+          opacity: 1;
+          pointer-events: auto;
+        }
+      }
+    }
+
+    .cell-expand-btn {
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 20px;
+      background: var(--panel-bg);
+      border: 1px solid var(--border-glass);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.15s ease;
+      z-index: 5;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+
+      &:hover {
+        background: var(--accent-gradient);
+        color: var(--btn-primary-text);
+        border-color: var(--accent);
+        transform: translateY(-50%) scale(1.05);
+      }
+      
+      &:active {
+        transform: translateY(-50%) scale(0.95);
+      }
+    }
+
+    .cell-edit-input {
+      width: 100%;
+      height: 100%;
+      border: 1.5px solid var(--accent);
+      border-radius: 0;
+      background: var(--input-bg);
+      color: var(--text);
+      font-size: 13px;
+      font-family: var(--font-body);
+      padding: 0 14px;
+      outline: none;
+      box-shadow: inset 0 0 4px var(--accent-light);
+    }
+
+    /* Cell Detail Modal Styles */
+    .cell-detail-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .cell-detail-modal {
+      width: 650px;
+      max-width: 92%;
+      background: var(--panel-glass);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid var(--border-strong);
+      border-top: 3px solid var(--accent);
+      border-radius: 16px;
+      box-shadow: var(--shadow-premium), 0 20px 40px rgba(0, 0, 0, 0.15);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-dim);
+    }
+
+    .modal-title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      text-align: left;
+    }
+
+    .modal-subtitle {
+      font-size: 11px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin: 0;
+    }
+
+    .btn-close-modal {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+      
+      &:hover {
+        background: var(--danger-bg-opacity);
+        color: var(--danger);
+      }
+    }
+
+    .modal-body {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .cell-detail-textarea {
+      width: 100%;
+      height: 260px;
+      min-height: 150px;
+      max-height: 400px;
+      background: var(--input-bg);
+      border: 1px solid var(--border-glass);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 13px;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      line-height: 1.6;
+      padding: 16px;
+      outline: none;
+      resize: vertical;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      
+      &:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-focus-shadow);
+      }
+      
+      &::-webkit-scrollbar {
+        width: 8px;
+      }
+      &::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      &::-webkit-scrollbar-thumb {
+        background: var(--scrollbar-thumb);
+        border-radius: 4px;
+      }
+    }
+
+    .modal-body-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 0 4px;
+    }
+
+    .textarea-stats {
+      font-family: var(--font-body);
+      font-weight: 500;
+    }
+
+    .keyboard-hint {
+      font-size: 11px;
+      opacity: 0.8;
+      
+      strong {
+        color: var(--text);
+        background: var(--panel-hover);
+        padding: 2px 6px;
+        border-radius: 4px;
+        border: 1px solid var(--border-glass);
+        font-family: monospace;
+      }
+    }
+
+    .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 18px 24px;
+      border-top: 1px solid var(--border-dim);
+      background: var(--panel-hover);
+    }
+
+    @keyframes scaleIn {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .animate-scale-in {
+      animation: scaleIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     }
 
     .cell-header {
@@ -287,6 +608,16 @@ export class GridViewComponent implements OnDestroy {
   readonly rows = input.required<string[][]>();
   readonly searchMatches = input<SearchMatch[]>([]);
   readonly currentMatch = input<SearchMatch | null>(null);
+
+  @Output() readonly cellEdit = new EventEmitter<{ rowIndex: number; colIndex: number; newValue: string }>();
+
+  readonly editingCell = signal<{ rowIndex: number; colIndex: number } | null>(null);
+  readonly editValue = signal<string>('');
+  readonly activeDetailCell = signal<{ rowIndex: number; colIndex: number; value: string } | null>(null);
+  readonly charCount = signal(0);
+  readonly wordCount = signal(0);
+  readonly hoveredCell = signal<{ rowIndex: number; colIndex: number } | null>(null);
+  readonly hoveredCellOverflows = signal<boolean>(false);
 
   private readonly gridViewport =
     viewChild<ElementRef<HTMLDivElement>>('gridViewport');
@@ -628,5 +959,116 @@ export class GridViewComponent implements OnDestroy {
     }
 
     return parts;
+  }
+
+  isEditing(rowIndex: number, colIndex: number): boolean {
+    const current = this.editingCell();
+    return current !== null && current.rowIndex === rowIndex && current.colIndex === colIndex;
+  }
+
+  startEdit(rowIndex: number, colIndex: number, currentValue: string): void {
+    this.editingCell.set({ rowIndex, colIndex });
+    this.editValue.set(currentValue);
+    
+    // Focus the input in the next tick
+    setTimeout(() => {
+      const inputEl = document.querySelector('.cell-edit-input') as HTMLInputElement;
+      if (inputEl) {
+        inputEl.focus();
+        inputEl.select();
+      }
+    }, 0);
+  }
+
+  commitEdit(rowIndex: number, colIndex: number, newValue: string): void {
+    const current = this.editingCell();
+    if (!current || current.rowIndex !== rowIndex || current.colIndex !== colIndex) return;
+    
+    // Only emit if value changed
+    const originalValue = this.rows()[rowIndex][colIndex];
+    if (originalValue !== newValue) {
+      this.cellEdit.emit({ rowIndex, colIndex, newValue });
+    }
+    
+    this.editingCell.set(null);
+  }
+
+  cancelEdit(): void {
+    this.editingCell.set(null);
+  }
+
+  openDetailDialog(rowIndex: number, colIndex: number, value: string): void {
+    this.activeDetailCell.set({ rowIndex, colIndex, value });
+    this.charCount.set(value.length);
+    this.wordCount.set(value.trim() ? value.trim().split(/\s+/).length : 0);
+    setTimeout(() => {
+      const textarea = document.querySelector('.cell-detail-textarea') as HTMLTextAreaElement;
+      if (textarea) {
+        textarea.focus();
+        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+      }
+    }, 0);
+  }
+
+  closeDetailDialog(): void {
+    this.activeDetailCell.set(null);
+  }
+
+  updateTextareaStats(val: string): void {
+    this.charCount.set(val.length);
+    this.wordCount.set(val.trim() ? val.trim().split(/\s+/).length : 0);
+  }
+
+  saveDetailEdit(newValue: string): void {
+    const current = this.activeDetailCell();
+    if (!current) return;
+    
+    const originalValue = this.rows()[current.rowIndex][current.colIndex];
+    if (originalValue !== newValue) {
+      this.cellEdit.emit({
+        rowIndex: current.rowIndex,
+        colIndex: current.colIndex,
+        newValue
+      });
+    }
+    
+    this.closeDetailDialog();
+  }
+
+  onTextareaKeyDown(event: KeyboardEvent, value: string): void {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.closeDetailDialog();
+    } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.saveDetailEdit(value);
+    }
+  }
+
+  onCellMouseEnter(event: MouseEvent, rowIndex: number, colIndex: number): void {
+    this.hoveredCell.set({ rowIndex, colIndex });
+    const cellEl = event.currentTarget as HTMLElement;
+    const textEl = cellEl.querySelector('.cell-text') as HTMLElement;
+    if (textEl) {
+      const isOverflowing = textEl.scrollWidth > textEl.clientWidth;
+      this.hoveredCellOverflows.set(isOverflowing);
+    } else {
+      this.hoveredCellOverflows.set(false);
+    }
+  }
+
+  onCellMouseLeave(): void {
+    this.hoveredCell.set(null);
+    this.hoveredCellOverflows.set(false);
+  }
+
+  shouldShowExpandBtn(rowIndex: number, colIndex: number): boolean {
+    const hover = this.hoveredCell();
+    return hover !== null && 
+           hover.rowIndex === rowIndex && 
+           hover.colIndex === colIndex && 
+           this.hoveredCellOverflows();
   }
 }

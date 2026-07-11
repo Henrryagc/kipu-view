@@ -135,12 +135,59 @@ body {
   }
 
   /* Hierarchical Path Tooltip Styles */
+  .tooltip-path-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 160px;
+    padding-top: 2px;
+  }
+
+  .tooltip-copy-btn {
+    position: absolute;
+    right: 0;
+    top: 0;
+    background: var(--panel-hover);
+    border: 1px solid var(--border-glass);
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: var(--text-muted);
+    font-size: 9px;
+    font-family: var(--font-body);
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    transition: all 0.15s ease;
+    z-index: 10;
+    user-select: none;
+    -webkit-user-select: none;
+
+    &:hover {
+      background: var(--accent-gradient-opacity);
+      color: var(--accent);
+      border-color: var(--accent-border-opacity);
+    }
+
+    &:active {
+      transform: scale(0.95);
+    }
+
+    &.copied {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: var(--accent-gradient-opacity);
+    }
+  }
+
   .path-hierarchy {
     display: flex;
     flex-direction: column;
     gap: 4px;
     text-align: left;
     font-family: var(--font-body);
+    padding-right: 55px;
   }
 
   .path-hierarchy-row {

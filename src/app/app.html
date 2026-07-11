@@ -73,6 +73,7 @@
           [rows]="tableRows()"
           [searchMatches]="searchMatches()"
           [currentMatch]="currentMatch()"
+          (cellEdit)="onCellEdit($event)"
         />
         @if (isSearchOpen()) {
           <app-search-panel

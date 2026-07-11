@@ -278,6 +278,28 @@ export class TabBarComponent {
   @Output() readonly closeTab = new EventEmitter<string>();
   @Output() readonly addTab = new EventEmitter<void>();
 
+  constructor() {
+    (window as any).copyTabPath = (event: MouseEvent, path: string) => {
+      event.stopPropagation();
+      navigator.clipboard.writeText(path).then(() => {
+        const btn = event.currentTarget as HTMLElement;
+        if (!btn) return;
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent); margin-right: 2px;">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          ${this.ts.currentLanguage() === 'en' ? 'Copied!' : '¡Copiado!'}
+        `;
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.innerHTML = originalHTML;
+          btn.classList.remove('copied');
+        }, 1500);
+      });
+    };
+  }
+
   onCloseClick(event: MouseEvent, tabId: string): void {
     event.stopPropagation(); // Avoid selecting the tab when closing it
     this.closeTab.emit(tabId);
@@ -299,7 +321,17 @@ export class TabBarComponent {
     // Check if it's an absolute path
     const isAbsolute = path.startsWith('/') || /^[a-zA-Z]:/.test(path);
     
-    let html = '<div class="path-hierarchy">';
+    let html = `
+      <div class="tooltip-path-container">
+        <button type="button" class="tooltip-copy-btn" onclick="window.copyTabPath(event, '${path.replace(/\\/g, '\\\\')}')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+            <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+          </svg>
+          ${this.ts.currentLanguage() === 'en' ? 'Copy' : 'Copiar'}
+        </button>
+        <div class="path-hierarchy">
+    `;
     
     for (let i = 0; i < segments.length; i++) {
       const segment = segments[i];
@@ -327,7 +359,7 @@ export class TabBarComponent {
       `;
     }
     
-    html += '</div>';
+    html += '</div></div>';
     return html;
   }
 }

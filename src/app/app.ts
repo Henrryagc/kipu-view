@@ -499,6 +499,27 @@ export class App {
     }
   }
 
+  onCellEdit(event: { rowIndex: number; colIndex: number; newValue: string }): void {
+    const active = this.activeTab();
+    const delimiter = this.effectiveDelimiter();
+    if (!active || !delimiter) return;
+
+    const dataRows = this.tableRows().map(row => [...row]);
+    const r = event.rowIndex;
+    const c = event.colIndex;
+    if (r >= dataRows.length || c >= dataRows[r].length) return;
+
+    dataRows[r][c] = event.newValue;
+
+    const allRows = [this.tableHeaders(), ...dataRows];
+    const lineEnding = active.content.includes('\r\n') ? '\r\n' : '\n';
+    const newContent = allRows.map(row => row.join(delimiter)).join(lineEnding);
+
+    this.tabs.update(list =>
+      list.map(t => t.id === active.id ? { ...t, content: newContent, isModified: true } : t)
+    );
+  }
+
   @HostListener('window:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent): void {
     const isCmdOrCtrl = event.metaKey || event.ctrlKey;
