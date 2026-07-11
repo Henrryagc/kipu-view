@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, inject, input, signal, computed } from '@angular/core';
+import { Component, EventEmitter, Output, inject, input, signal, computed, ElementRef, HostListener } from '@angular/core';
 import { TranslationService } from '../../services/translation.service';
 import { TooltipDirective } from '../../directives/tooltip.directive';
 import { SelectComponent } from '../select/select.component';
@@ -22,6 +22,24 @@ import { CustomSeparatorInputComponent } from '../custom-separator-input/custom-
           </button>
 
           @if (filePath()) {
+            <button
+              type="button"
+              class="btn"
+              [class.btn-primary]="isModified()"
+              [class.btn-ghost]="!isModified()"
+              [disabled]="!isModified()"
+              (click)="saveFile.emit()"
+              [appTooltip]="ts.t().saveChanges"
+              tooltipPosition="bottom"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                <polyline points="17 21 17 13 7 13 7 21"/>
+                <polyline points="7 3 7 8 15 8"/>
+              </svg>
+              {{ ts.t().saveChanges }}
+            </button>
+
             <button type="button" class="btn btn-ghost" (click)="clearFile.emit()">
               {{ ts.t().close }}
             </button>
@@ -50,8 +68,18 @@ import { CustomSeparatorInputComponent } from '../custom-separator-input/custom-
 
       <!-- Right: Settings & Readouts -->
       <div class="toolbar-right">
+        <!-- Desktop Actions -->
+        <div class="toolbar-actions-desktop">
+          <!-- Search Toggle -->
+          @if (filePath()) {
+            <button type="button" class="btn btn-icon-only" (click)="searchToggle.emit()" [appTooltip]="ts.t().search" tooltipPosition="bottom">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.3-4.3"/>
+              </svg>
+            </button>
+          }
 
-        <div class="toolbar-actions">
           <!-- Translation Toggle -->
           <button type="button" class="btn btn-icon-only" (click)="ts.toggleLanguage()" [appTooltip]="ts.t().langToggle" tooltipPosition="bottom">
             <span class="lang-text">{{ ts.currentLanguage() === 'en' ? 'ES' : 'EN' }}</span>
@@ -72,6 +100,61 @@ import { CustomSeparatorInputComponent } from '../custom-separator-input/custom-
               </svg>
             }
           </button>
+        </div>
+
+        <!-- Mobile/Tablet Dropdown Actions -->
+        <div class="toolbar-actions-mobile">
+          <button
+            type="button"
+            class="btn btn-icon-only"
+            (click)="toggleMenu($event)"
+            [appTooltip]="ts.t().langToggle === 'Language' ? 'More Options' : 'Más opciones'"
+            tooltipPosition="bottom"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="1.5"/>
+              <circle cx="12" cy="5" r="1.5"/>
+              <circle cx="12" cy="19" r="1.5"/>
+            </svg>
+          </button>
+
+          @if (isMenuOpen()) {
+            <div class="mobile-menu-dropdown">
+              <!-- Search Item -->
+              @if (filePath()) {
+                <button type="button" class="dropdown-item" (click)="triggerSearch()">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="item-icon">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="m21 21-4.3-4.3"/>
+                  </svg>
+                  <span class="item-text">{{ ts.t().search }}</span>
+                </button>
+              }
+
+              <!-- Language Item -->
+              <button type="button" class="dropdown-item" (click)="triggerLanguage()">
+                <span class="item-icon-text">{{ ts.currentLanguage() === 'en' ? 'ES' : 'EN' }}</span>
+                <span class="item-text">{{ ts.t().langToggle }}</span>
+              </button>
+
+              <!-- Theme Item -->
+              <button type="button" class="dropdown-item" (click)="triggerTheme()">
+                <div class="item-icon-wrapper">
+                  @if (isDark()) {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="item-icon">
+                      <circle cx="12" cy="12" r="4"/>
+                      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+                    </svg>
+                  } @else {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="item-icon">
+                      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+                    </svg>
+                  }
+                </div>
+                <span class="item-text">{{ ts.t().themeToggle }}</span>
+              </button>
+            </div>
+          }
         </div>
       </div>
     </header>
@@ -380,26 +463,118 @@ import { CustomSeparatorInputComponent } from '../custom-separator-input/custom-
       }
     }
 
-    .toolbar-actions {
+    .toolbar-actions-desktop {
       display: flex;
       align-items: center;
       gap: 8px;
+    }
+
+    .toolbar-actions-mobile {
+      display: none;
+      position: relative;
+    }
+
+    .mobile-menu-dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      width: 180px;
+      background: var(--panel-bg);
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      box-shadow: var(--shadow-md);
+      z-index: 1000;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      animation: slideDown 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 10px 12px;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 500;
+      text-align: left;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.15s ease, color 0.15s ease;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text);
+      }
+    }
+
+    .item-icon {
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .item-icon-text {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 11px;
+      color: var(--text-muted);
+      width: 16px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .item-icon-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    .item-text {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     @keyframes slideIn {
       from { opacity: 0; transform: translateX(-10px); }
       to { opacity: 1; transform: translateX(0); }
     }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 850px) {
+      .toolbar-actions-desktop {
+        display: none;
+      }
+      .toolbar-actions-mobile {
+        display: flex;
+      }
+    }
   `]
 })
 export class ToolbarComponent {
   readonly ts = inject(TranslationService);
+  private readonly el = inject(ElementRef);
 
   readonly filePath = input.required<string | null>();
   readonly totalRowCount = input.required<number>();
   readonly delimiterKind = input.required<'comma' | 'semicolon' | 'tab' | 'custom'>();
   readonly customChar = input.required<string>();
   readonly customCharError = input.required<string | null>();
+  readonly isModified = input<boolean>(false);
 
   readonly delimiterOptions = computed(() => [
     { value: 'comma', label: this.ts.t().comma },
@@ -412,8 +587,36 @@ export class ToolbarComponent {
   @Output() readonly clearFile = new EventEmitter<void>();
   @Output() readonly delimiterKindChange = new EventEmitter<'comma' | 'semicolon' | 'tab' | 'custom'>();
   @Output() readonly customCharChange = new EventEmitter<string>();
+  @Output() readonly saveFile = new EventEmitter<void>();
+  @Output() readonly searchToggle = new EventEmitter<void>();
 
   readonly isDark = signal(true);
+  readonly isMenuOpen = signal(false);
+
+  toggleMenu(event: Event): void {
+    event.stopPropagation();
+    this.isMenuOpen.update(open => !open);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onClickOutside(event: Event): void {
+    if (!this.el.nativeElement.contains(event.target)) {
+      this.isMenuOpen.set(false);
+    }
+  }
+
+  triggerSearch(): void {
+    this.searchToggle.emit();
+    this.isMenuOpen.set(false);
+  }
+
+  triggerLanguage(): void {
+    this.ts.toggleLanguage();
+  }
+
+  triggerTheme(): void {
+    this.toggleTheme();
+  }
 
   constructor() {
     // Read and initialize theme safely in client browser

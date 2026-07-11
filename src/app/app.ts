@@ -8,18 +8,19 @@ import {
   NgZone,
   ViewChild,
   ElementRef,
+  HostListener
 } from '@angular/core';
 import { open } from '@tauri-apps/plugin-dialog';
-import { readTextFile, exists } from '@tauri-apps/plugin-fs';
+import { readTextFile, exists, writeTextFile } from '@tauri-apps/plugin-fs';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
 import { ToolbarComponent } from './components/toolbar/toolbar.component';
 import { StatePanelComponent } from './components/state-panel/state-panel.component';
-import { GridViewComponent } from './components/grid-view/grid-view.component';
+import { GridViewComponent, SearchMatch } from './components/grid-view/grid-view.component';
 import { TabBarComponent, FileTab } from './components/tab-bar/tab-bar.component';
 import { TooltipDirective } from './directives/tooltip.directive';
 import { TranslationService } from './services/translation.service';
-
 import { SeparatorConfirmDialogComponent } from './components/separator-confirm-dialog/separator-confirm-dialog.component';
+import { SearchPanelComponent } from './components/search-panel/search-panel.component';
 
 /** Preset delimiter choices. */
 type DelimiterKind = 'comma' | 'semicolon' | 'tab' | 'custom';
@@ -27,7 +28,15 @@ type DelimiterKind = 'comma' | 'semicolon' | 'tab' | 'custom';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [ToolbarComponent, StatePanelComponent, GridViewComponent, TabBarComponent, TooltipDirective, SeparatorConfirmDialogComponent],
+  imports: [
+    ToolbarComponent,
+    StatePanelComponent,
+    GridViewComponent,
+    TabBarComponent,
+    TooltipDirective,
+    SeparatorConfirmDialogComponent,
+    SearchPanelComponent
+  ],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
@@ -81,6 +90,18 @@ export class App {
   readonly pendingFile = signal<{ path: string; name: string; content: string } | null>(null);
   readonly confirmDelimiterKind = signal<DelimiterKind>('comma');
   readonly confirmCustomChar = signal<string>('');
+
+  // Search & Replace signals
+  readonly isSearchOpen = signal(false);
+  readonly isReplaceOpen = signal(false);
+  readonly searchQuery = signal('');
+  readonly replaceQuery = signal('');
+  readonly searchCaseSensitive = signal(false);
+  readonly searchWholeWord = signal(false);
+  readonly searchRegex = signal(false);
+  readonly searchColumn = signal<number | null>(null);
+  readonly currentMatchIndex = signal(0);
+  readonly saveStatus = signal<{ type: 'success' | 'error'; message: string } | null>(null);
 
   readonly confirmCustomCharError = computed(() => {
     if (this.confirmDelimiterKind() !== 'custom') return null;
@@ -247,6 +268,247 @@ export class App {
   });
 
   // ---------------------------------------------------------------------
+  // Search & Replace logic
+  // ---------------------------------------------------------------------
+
+  readonly searchMatches = computed<SearchMatch[]>(() => {
+    const query = this.searchQuery();
+    const rows = this.tableRows();
+    const caseSensitive = this.searchCaseSensitive();
+    const wholeWord = this.searchWholeWord();
+    const isRegex = this.searchRegex();
+    const searchCol = this.searchColumn();
+
+    if (!query || rows.length === 0) return [];
+
+    let regex: RegExp;
+    try {
+      if (isRegex) {
+        const flags = caseSensitive ? 'g' : 'gi';
+        regex = new RegExp(query, flags);
+      } else {
+        let escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (wholeWord) {
+          escaped = `\\b${escaped}\\b`;
+        }
+        const flags = caseSensitive ? 'g' : 'gi';
+        regex = new RegExp(escaped, flags);
+      }
+    } catch (e) {
+      return [];
+    }
+
+    const matches: SearchMatch[] = [];
+    for (let r = 0; r < rows.length; r++) {
+      const row = rows[r];
+      const colsToSearch = searchCol !== null ? [searchCol] : Array.from({ length: row.length }, (_, i) => i);
+
+      for (const c of colsToSearch) {
+        const cellText = row[c] || '';
+        regex.lastIndex = 0;
+        let match;
+        while ((match = regex.exec(cellText)) !== null) {
+          matches.push({
+            rowIndex: r,
+            colIndex: c,
+            matchStart: match.index,
+            matchLength: match[0].length
+          });
+          if (match[0].length === 0) {
+            regex.lastIndex++;
+          }
+        }
+      }
+    }
+    return matches;
+  });
+
+  readonly currentMatch = computed(() => {
+    const matches = this.searchMatches();
+    const idx = this.currentMatchIndex();
+    return matches.length > 0 && idx < matches.length ? matches[idx] : null;
+  });
+
+  toggleSearch(): void {
+    if (!this.fileContent()) return;
+    this.isSearchOpen.update(open => !open);
+    if (!this.isSearchOpen()) {
+      this.searchQuery.set('');
+    }
+  }
+
+  nextMatch(): void {
+    const total = this.searchMatches().length;
+    if (total === 0) return;
+    this.currentMatchIndex.update(idx => (idx + 1) % total);
+  }
+
+  prevMatch(): void {
+    const total = this.searchMatches().length;
+    if (total === 0) return;
+    this.currentMatchIndex.update(idx => (idx - 1 + total) % total);
+  }
+
+  replace(): void {
+    const match = this.currentMatch();
+    if (!match) return;
+
+    const active = this.activeTab();
+    const delimiter = this.effectiveDelimiter();
+    if (!active || !delimiter) return;
+
+    const dataRows = this.tableRows().map(row => [...row]);
+    const r = match.rowIndex;
+    const c = match.colIndex;
+    if (r >= dataRows.length || c >= dataRows[r].length) return;
+
+    const cellText = dataRows[r][c] || '';
+    const replaceText = this.replaceQuery();
+    
+    const newCellText = cellText.slice(0, match.matchStart) + replaceText + cellText.slice(match.matchStart + match.matchLength);
+    dataRows[r][c] = newCellText;
+
+    const allRows = [this.tableHeaders(), ...dataRows];
+    const lineEnding = active.content.includes('\r\n') ? '\r\n' : '\n';
+    const newContent = allRows.map(row => row.join(delimiter)).join(lineEnding);
+
+    this.tabs.update(list =>
+      list.map(t => t.id === active.id ? { ...t, content: newContent, isModified: true } : t)
+    );
+
+    setTimeout(() => {
+      const len = this.searchMatches().length;
+      if (len > 0) {
+        this.currentMatchIndex.update(idx => Math.min(idx, len - 1));
+      } else {
+        this.currentMatchIndex.set(0);
+      }
+    }, 0);
+  }
+
+  replaceAll(): void {
+    const active = this.activeTab();
+    const delimiter = this.effectiveDelimiter();
+    const query = this.searchQuery();
+    if (!active || !delimiter || !query) return;
+
+    const caseSensitive = this.searchCaseSensitive();
+    const wholeWord = this.searchWholeWord();
+    const isRegex = this.searchRegex();
+    const searchCol = this.searchColumn();
+
+    let regex: RegExp;
+    try {
+      if (isRegex) {
+        const flags = caseSensitive ? 'g' : 'gi';
+        regex = new RegExp(query, flags);
+      } else {
+        let escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (wholeWord) {
+          escaped = `\\b${escaped}\\b`;
+        }
+        const flags = caseSensitive ? 'g' : 'gi';
+        regex = new RegExp(escaped, flags);
+      }
+    } catch (e) {
+      return;
+    }
+
+    const dataRows = this.tableRows().map(row => [...row]);
+    let changed = false;
+
+    for (let r = 0; r < dataRows.length; r++) {
+      const row = dataRows[r];
+      const colsToSearch = searchCol !== null ? [searchCol] : Array.from({ length: row.length }, (_, i) => i);
+
+      for (const c of colsToSearch) {
+        const cellText = row[c] || '';
+        regex.lastIndex = 0;
+        if (regex.test(cellText)) {
+          row[c] = cellText.replace(regex, this.replaceQuery());
+          changed = true;
+        }
+      }
+    }
+
+    if (changed) {
+      const allRows = [this.tableHeaders(), ...dataRows];
+      const lineEnding = active.content.includes('\r\n') ? '\r\n' : '\n';
+      const newContent = allRows.map(row => row.join(delimiter)).join(lineEnding);
+
+      this.tabs.update(list =>
+        list.map(t => t.id === active.id ? { ...t, content: newContent, isModified: true } : t)
+      );
+
+      this.currentMatchIndex.set(0);
+    }
+  }
+
+  async saveActiveTab(): Promise<void> {
+    const active = this.activeTab();
+    if (!active || !active.isModified) return;
+
+    this.isLoading.set(true);
+    this.saveStatus.set(null);
+
+    try {
+      await writeTextFile(active.path, active.content);
+
+      this.tabs.update(list =>
+        list.map(t => t.id === active.id ? { ...t, isModified: false } : t)
+      );
+
+      this.saveStatus.set({
+        type: 'success',
+        message: this.ts.t().saveSuccess
+      });
+
+      setTimeout(() => {
+        if (this.saveStatus()?.type === 'success') {
+          this.saveStatus.set(null);
+        }
+      }, 3000);
+    } catch (err) {
+      this.saveStatus.set({
+        type: 'error',
+        message: this.ts.t().saveError.replace('{error}', this.describeError(err, 'Unknown error'))
+      });
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent): void {
+    const isCmdOrCtrl = event.metaKey || event.ctrlKey;
+
+    // Ctrl+F / Cmd+F -> Toggle Search
+    if (isCmdOrCtrl && event.key.toLowerCase() === 'f') {
+      if (this.fileContent()) {
+        event.preventDefault();
+        this.toggleSearch();
+      }
+    }
+
+    // Ctrl+S / Cmd+S -> Save File
+    if (isCmdOrCtrl && event.key.toLowerCase() === 's') {
+      if (this.activeTab()?.isModified) {
+        event.preventDefault();
+        this.saveActiveTab();
+      }
+    }
+
+    // Escape -> Close Search Panel
+    if (event.key === 'Escape') {
+      if (this.isSearchOpen()) {
+        event.preventDefault();
+        this.isSearchOpen.set(false);
+        this.searchQuery.set('');
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------
   // File selection + reading
   // ---------------------------------------------------------------------
 
@@ -380,4 +642,3 @@ export class App {
     }
   }
 }
-

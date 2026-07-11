@@ -9,6 +9,7 @@ export interface FileTab {
   content: string;
   delimiterKind: 'comma' | 'semicolon' | 'tab' | 'custom';
   customChar: string;
+  isModified?: boolean;
 }
 
 @Component({
@@ -22,6 +23,7 @@ export interface FileTab {
           <div
             class="tab-item"
             [class.active]="tab.id === activeId()"
+            [class.modified]="tab.isModified"
             [appTooltip]="tab.path"
             tooltipPosition="bottom"
             (click)="selectTab.emit(tab.id)"
@@ -35,18 +37,22 @@ export interface FileTab {
             <!-- Tab Name -->
             <span class="tab-name">{{ tab.name }}</span>
 
-            <!-- Close Tab Button -->
-            <button
-              type="button"
-              class="btn-close"
-              (click)="onCloseClick($event, tab.id)"
-              [appTooltip]="ts.t().close"
-              tooltipPosition="bottom"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 6 6 18M6 6l12 12"/>
-              </svg>
-            </button>
+            <!-- Tab Action Container (Modified dot / Close Button) -->
+            <div class="tab-action-container">
+              <span class="tab-modified-indicator" [appTooltip]="ts.t().unsavedChanges" tooltipPosition="bottom"></span>
+              
+              <button
+                type="button"
+                class="btn-close"
+                (click)="onCloseClick($event, tab.id)"
+                [appTooltip]="ts.t().close"
+                tooltipPosition="bottom"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 6 6 18M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
           </div>
         }
 
@@ -124,6 +130,10 @@ export interface FileTab {
         background: var(--panel-hover);
         color: var(--text);
 
+        .tab-modified-indicator {
+          opacity: 0;
+        }
+
         .btn-close {
           opacity: 1;
         }
@@ -163,6 +173,30 @@ export interface FileTab {
       flex: 1;
     }
 
+    .tab-action-container {
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .tab-modified-indicator {
+      width: 7px;
+      height: 7px;
+      background: var(--accent);
+      border-radius: 50%;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      transition: opacity 0.15s ease;
+      pointer-events: none;
+      box-shadow: 0 0 4px var(--accent);
+    }
+
     .btn-close {
       background: transparent;
       border: none;
@@ -174,12 +208,40 @@ export interface FileTab {
       padding: 2px;
       border-radius: 50%;
       opacity: 0;
-      transition: all 0.15s ease;
-      flex-shrink: 0;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+      z-index: 2;
 
       &:hover {
         background: var(--danger-bg-opacity);
         color: var(--danger);
+      }
+    }
+
+    // Modified tabs: show dot and hide close button when not hovered
+    .tab-item.modified:not(:hover) {
+      .btn-close {
+        opacity: 0;
+      }
+      .tab-modified-indicator {
+        opacity: 1;
+      }
+    }
+
+    // Non-modified tabs: hide dot
+    .tab-item:not(.modified) {
+      .tab-modified-indicator {
+        opacity: 0;
+      }
+    }
+
+    // Inactive non-modified tabs: hide close button by default
+    .tab-item:not(.active):not(.modified):not(:hover) {
+      .btn-close {
+        opacity: 0;
       }
     }
 

@@ -8,9 +8,17 @@ import {
   signal,
   viewChild,
   NgZone,
-  inject
+  inject,
+  effect
 } from '@angular/core';
 import { TooltipDirective } from '../../directives/tooltip.directive';
+
+export interface SearchMatch {
+  rowIndex: number;
+  colIndex: number;
+  matchStart: number;
+  matchLength: number;
+}
 
 const ROW_HEIGHT = 36; // Premium size: slightly taller rows for better readability
 const OVERSCAN_ROWS = 8;
@@ -38,7 +46,11 @@ const OVERSCAN_ROWS = 8;
           <div class="grid-row" [style.height.px]="rowHeight">
             <div class="cell cell-gutter">{{ entry.index + 1 }}</div>
             @for (cell of entry.row; track $index) {
-              <div class="cell">{{ cell }}</div>
+              <div class="cell">
+                @for (part of getCellParts(cell, entry.index, $index); track $index) {
+                  <span [class.search-highlight]="part.isMatch" [class.search-highlight-active]="part.isActive">{{ part.text }}</span>
+                }
+              </div>
             }
           </div>
         }
@@ -165,6 +177,22 @@ const OVERSCAN_ROWS = 8;
       pointer-events: none;
     }
 
+    .search-highlight {
+      background-color: var(--highlight-bg, rgba(86, 235, 198, 0.25));
+      color: inherit;
+      border-radius: 2px;
+      padding: 2px 0;
+    }
+
+    .search-highlight-active {
+      background-color: var(--highlight-active-bg, #56ebc6);
+      color: var(--highlight-active-text, #1b1e25);
+      font-weight: 600;
+      border-radius: 2px;
+      padding: 2px 0;
+      box-shadow: 0 0 4px var(--accent);
+    }
+
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
@@ -174,6 +202,8 @@ const OVERSCAN_ROWS = 8;
 export class GridViewComponent {
   readonly headers = input.required<string[]>();
   readonly rows = input.required<string[][]>();
+  readonly searchMatches = input<SearchMatch[]>([]);
+  readonly currentMatch = input<SearchMatch | null>(null);
 
   private readonly gridViewport =
     viewChild<ElementRef<HTMLDivElement>>('gridViewport');
@@ -232,10 +262,106 @@ export class GridViewComponent {
       });
       observer.observe(el);
     });
+
+    effect(() => {
+      const match = this.currentMatch();
+      if (match) {
+        this.scrollToRow(match.rowIndex, match.colIndex);
+      }
+    });
   }
 
   onGridScroll(event: Event): void {
     const target = event.target as HTMLDivElement;
     this.scrollTop.set(target.scrollTop);
+  }
+
+  scrollToRow(rowIndex: number, colIndex?: number): void {
+    const el = this.gridViewport()?.nativeElement;
+    if (!el) return;
+
+    // Vertical scroll
+    const rowTop = rowIndex * ROW_HEIGHT;
+    const viewportHeight = el.clientHeight;
+    const currentScrollTop = el.scrollTop;
+
+    // Check if row is visible (safety margin for sticky header)
+    const headerHeight = ROW_HEIGHT;
+    const isVisible = rowTop >= (currentScrollTop + headerHeight) &&
+                      (rowTop + ROW_HEIGHT) <= (currentScrollTop + viewportHeight);
+
+    if (!isVisible) {
+      // Center the row
+      const targetScrollTop = rowTop - (viewportHeight / 2) + (ROW_HEIGHT / 2) + (headerHeight / 2);
+      el.scrollTop = Math.max(0, targetScrollTop);
+    }
+
+    // Horizontal scroll
+    if (colIndex !== undefined) {
+      const cellLeft = 60 + colIndex * 150; // gutter (60) + index * cellWidth (150)
+      const cellRight = cellLeft + 150;
+      const viewportWidth = el.clientWidth;
+      const currentScrollLeft = el.scrollLeft;
+
+      const isColVisible = cellLeft >= currentScrollLeft && cellRight <= (currentScrollLeft + viewportWidth);
+      if (!isColVisible) {
+        // Center the column
+        const targetScrollLeft = cellLeft - (viewportWidth / 2) + 75;
+        el.scrollLeft = Math.max(0, targetScrollLeft);
+      }
+    }
+  }
+
+  getCellParts(cellText: string, rowIndex: number, colIndex: number) {
+    const matches = this.searchMatches().filter(
+      m => m.rowIndex === rowIndex && m.colIndex === colIndex
+    );
+
+    if (matches.length === 0) {
+      return [{ text: cellText, isMatch: false, isActive: false }];
+    }
+
+    // Sort matches by start index to process sequentially
+    const sortedMatches = [...matches].sort((a, b) => a.matchStart - b.matchStart);
+
+    const parts: { text: string; isMatch: boolean; isActive: boolean }[] = [];
+    let lastIndex = 0;
+    const current = this.currentMatch();
+
+    for (const match of sortedMatches) {
+      // Text before match
+      if (match.matchStart > lastIndex) {
+        parts.push({
+          text: cellText.slice(lastIndex, match.matchStart),
+          isMatch: false,
+          isActive: false
+        });
+      }
+
+      // Check if active
+      const isActive = current !== null &&
+                       current.rowIndex === rowIndex &&
+                       current.colIndex === colIndex &&
+                       current.matchStart === match.matchStart;
+
+      parts.push({
+        text: cellText.slice(match.matchStart, match.matchStart + match.matchLength),
+        isMatch: true,
+        isActive
+      });
+
+      lastIndex = match.matchStart + match.matchLength;
+    }
+
+    // Trailing text
+    if (lastIndex < cellText.length) {
+      parts.push({
+        text: cellText.slice(lastIndex),
+        isMatch: false,
+        isActive: false
+      });
+    }
+
+    return parts;
   }
 }

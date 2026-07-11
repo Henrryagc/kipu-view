@@ -5,10 +5,13 @@
     [delimiterKind]="delimiterKind()"
     [customChar]="customChar()"
     [customCharError]="customCharError()"
+    [isModified]="activeTab()?.isModified || false"
     (pickFile)="pickFile()"
     (clearFile)="clearFile()"
     (delimiterKindChange)="onDelimiterKindChange($event)"
     (customCharChange)="onCustomCharChange($event)"
+    (saveFile)="saveActiveTab()"
+    (searchToggle)="toggleSearch()"
   />
 
   @if (tabs().length > 0) {
@@ -29,6 +32,33 @@
         <line x1="12" y1="16" x2="12.01" y2="16"/>
       </svg>
       <span class="error-text">{{ errorMessage }}</span>
+      <button type="button" class="btn-close-banner" (click)="appError.set(null)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+  }
+
+  @if (saveStatus(); as status) {
+    <div class="banner" [class.banner-error]="status.type === 'error'" [class.banner-success]="status.type === 'success'" role="alert">
+      @if (status.type === 'success') {
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="banner-icon">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      } @else {
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="banner-icon">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      }
+      <span class="error-text">{{ status.message }}</span>
+      <button type="button" class="btn-close-banner" (click)="saveStatus.set(null)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 6 6 18M6 6l12 12"/>
+        </svg>
+      </button>
     </div>
   }
 
@@ -36,7 +66,40 @@
     @if (isLoading() || !fileContent()) {
       <app-state-panel [isLoading]="isLoading()" />
     } @else {
-      <app-grid-view [headers]="tableHeaders()" [rows]="tableRows()" />
+      <div class="grid-view-wrapper">
+        <app-grid-view
+          [headers]="tableHeaders()"
+          [rows]="tableRows()"
+          [searchMatches]="searchMatches()"
+          [currentMatch]="currentMatch()"
+        />
+        @if (isSearchOpen()) {
+          <app-search-panel
+            [headers]="tableHeaders()"
+            [searchQuery]="searchQuery()"
+            [replaceQuery]="replaceQuery()"
+            [isReplaceOpen]="isReplaceOpen()"
+            [caseSensitive]="searchCaseSensitive()"
+            [wholeWord]="searchWholeWord()"
+            [regex]="searchRegex()"
+            [selectedColumn]="searchColumn()"
+            [matchesCount]="searchMatches().length"
+            [currentMatchIndex]="currentMatchIndex()"
+            (searchQueryChange)="searchQuery.set($event); currentMatchIndex.set(0)"
+            (replaceQueryChange)="replaceQuery.set($event)"
+            (isReplaceOpenChange)="isReplaceOpen.set($event)"
+            (caseSensitiveChange)="searchCaseSensitive.set($event); currentMatchIndex.set(0)"
+            (wholeWordChange)="searchWholeWord.set($event); currentMatchIndex.set(0)"
+            (regexChange)="searchRegex.set($event); currentMatchIndex.set(0)"
+            (selectedColumnChange)="searchColumn.set($event); currentMatchIndex.set(0)"
+            (nextMatch)="nextMatch()"
+            (prevMatch)="prevMatch()"
+            (replace)="replace()"
+            (replaceAll)="replaceAll()"
+            (close)="toggleSearch()"
+          />
+        }
+      </div>
     }
   </main>
 

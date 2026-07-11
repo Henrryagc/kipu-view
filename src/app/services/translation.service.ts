@@ -31,7 +31,21 @@ const translations = {
     confirmTitle: 'Confirm Separator',
     confirmMessage: 'You are opening the file "{name}". Confirm the separator to use, or select another:',
     confirmBtn: 'Open File',
-    cancelBtn: 'Cancel'
+    cancelBtn: 'Cancel',
+    search: 'Search',
+    replace: 'Replace',
+    replaceAll: 'Replace All',
+    matchCase: 'Match Case',
+    matchWholeWord: 'Match Whole Word',
+    useRegex: 'Use Regular Expression',
+    searchInColumn: 'Search in column',
+    allColumns: 'All columns',
+    noResults: 'No results',
+    matchCounter: '{current} of {total}',
+    saveChanges: 'Save Changes',
+    saveSuccess: 'File saved successfully!',
+    saveError: 'Failed to save file: {error}',
+    unsavedChanges: 'Unsaved changes'
   },
   es: {
     openFile: 'Abrir archivo',
@@ -61,7 +75,21 @@ const translations = {
     confirmTitle: 'Confirmar Separador',
     confirmMessage: 'Está abriendo el archivo "{name}". Confirme el separador a usar, o seleccione otro:',
     confirmBtn: 'Abrir archivo',
-    cancelBtn: 'Cancelar'
+    cancelBtn: 'Cancelar',
+    search: 'Buscar',
+    replace: 'Reemplazar',
+    replaceAll: 'Reemplazar todo',
+    matchCase: 'Coincidir mayúsculas y minúsculas',
+    matchWholeWord: 'Coincidir palabra completa',
+    useRegex: 'Usar expresión regular',
+    searchInColumn: 'Buscar en columna',
+    allColumns: 'Todas las columnas',
+    noResults: 'Sin resultados',
+    matchCounter: '{current} de {total}',
+    saveChanges: 'Guardar cambios',
+    saveSuccess: '¡Archivo guardado con éxito!',
+    saveError: 'Error al guardar el archivo: {error}',
+    unsavedChanges: 'Cambios no guardados'
   }
 };
 

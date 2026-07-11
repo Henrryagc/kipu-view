@@ -39,6 +39,31 @@
   border-bottom: 1px solid var(--danger-border-opacity);
 }
 
+.banner-success {
+  background: rgba(86, 235, 198, 0.08);
+  color: var(--accent);
+  border-bottom: 1px solid var(--accent-border-opacity);
+}
+
+.btn-close-banner {
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 50%;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  margin-left: auto;
+  
+  &:hover {
+    opacity: 1;
+  }
+}
+
 .banner-icon {
   flex-shrink: 0;
 }
@@ -156,4 +181,13 @@
 .status-separator {
   color: var(--border-glass);
   user-select: none;
+}
+
+.grid-view-wrapper {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
