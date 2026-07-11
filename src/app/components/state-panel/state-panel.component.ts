@@ -49,7 +49,7 @@ import { TranslationService } from '../../services/translation.service';
       -webkit-backdrop-filter: blur(12px);
       border: 1px solid var(--border-glass);
       border-radius: 16px;
-      margin: 20px;
+      margin: 0;
       box-shadow: var(--shadow-premium);
     }
 

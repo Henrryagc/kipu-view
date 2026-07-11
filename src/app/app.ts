@@ -478,6 +478,27 @@ export class App {
     }
   }
 
+  async discardActiveTabChanges(): Promise<void> {
+    const active = this.activeTab();
+    if (!active || !active.isModified) return;
+
+    this.isLoading.set(true);
+    this.appError.set(null);
+
+    try {
+      const content = await readTextFile(active.path);
+      this.tabs.update(list =>
+        list.map(t => t.id === active.id ? { ...t, content: content, isModified: false } : t)
+      );
+    } catch (err) {
+      this.appError.set(
+        this.describeError(err, 'Failed to reload the file to discard changes.')
+      );
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
   @HostListener('window:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent): void {
     const isCmdOrCtrl = event.metaKey || event.ctrlKey;

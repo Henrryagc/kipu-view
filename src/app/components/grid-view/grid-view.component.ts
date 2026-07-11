@@ -9,9 +9,11 @@ import {
   viewChild,
   NgZone,
   inject,
-  effect
+  effect,
+  OnDestroy
 } from '@angular/core';
 import { TooltipDirective } from '../../directives/tooltip.directive';
+import { TranslationService } from '../../services/translation.service';
 
 export interface SearchMatch {
   rowIndex: number;
@@ -32,9 +34,35 @@ const OVERSCAN_ROWS = 8;
       <div class="grid-viewport" #gridViewport (scroll)="onGridScroll($event)">
         <!-- Sticky Header -->
         <div class="grid-row grid-row-header">
-          <div class="cell cell-gutter cell-gutter-header">#</div>
+          <div 
+            class="cell cell-gutter cell-gutter-header auto-fit-all-btn"
+            (click)="autoResizeAllColumns()"
+            [appTooltip]="ts.t().autoFitAll"
+            tooltipPosition="bottom"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="fit-icon">
+              <path d="M4 12h16M4 12l4-4M4 12l4 4M20 12l-4-4M20 12l-4 4"/>
+            </svg>
+          </div>
           @for (header of headers(); track $index) {
-            <div class="cell cell-header" [appTooltip]="header" tooltipPosition="bottom">{{ header || '\u2014' }}</div>
+            <div 
+              class="cell cell-header"
+              [style.flex]="'0 0 ' + columnWidths()[$index] + 'px'"
+              [style.width.px]="columnWidths()[$index]"
+            >
+              <span 
+                class="cell-text"
+                [appTooltip]="header" 
+                tooltipPosition="bottom"
+              >
+                {{ header || '\u2014' }}
+              </span>
+              <div 
+                class="col-resize-handle"
+                (mousedown)="onResizeStart($event, $index)"
+                (dblclick)="autoResizeColumn($index)"
+              ></div>
+            </div>
           }
         </div>
 
@@ -46,10 +74,16 @@ const OVERSCAN_ROWS = 8;
           <div class="grid-row" [style.height.px]="rowHeight">
             <div class="cell cell-gutter">{{ entry.index + 1 }}</div>
             @for (cell of entry.row; track $index) {
-              <div class="cell">
-                @for (part of getCellParts(cell, entry.index, $index); track $index) {
-                  <span [class.search-highlight]="part.isMatch" [class.search-highlight-active]="part.isActive">{{ part.text }}</span>
-                }
+              <div 
+                class="cell"
+                [style.flex]="'0 0 ' + columnWidths()[$index] + 'px'"
+                [style.width.px]="columnWidths()[$index]"
+              >
+                <span class="cell-text">
+                  @for (part of getCellParts(cell, entry.index, $index); track $index) {
+                    <span [class.search-highlight]="part.isMatch" [class.search-highlight-active]="part.isActive">{{ part.text }}</span>
+                  }
+                </span>
               </div>
             }
           </div>
@@ -135,7 +169,6 @@ const OVERSCAN_ROWS = 8;
     }
 
     .cell {
-      flex: 0 0 150px;
       display: flex;
       align-items: center;
       padding: 0 14px;
@@ -154,6 +187,54 @@ const OVERSCAN_ROWS = 8;
       letter-spacing: 0.02em;
       text-transform: uppercase;
       font-weight: 700;
+      position: relative;
+      overflow: visible;
+    }
+
+    .cell-text {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .col-resize-handle {
+      position: absolute;
+      top: 0;
+      right: -3px;
+      width: 6px;
+      height: 100%;
+      cursor: col-resize;
+      z-index: 15;
+      background: transparent;
+      transition: background-color 0.15s ease;
+      
+      &:hover,
+      &:active {
+        background-color: var(--accent);
+        box-shadow: 0 0 4px var(--accent);
+      }
+    }
+
+    .auto-fit-all-btn {
+      cursor: pointer;
+      transition: background-color 0.15s ease, color 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      
+      &:hover {
+        background: var(--panel-hover);
+        color: var(--accent);
+      }
+      
+      &:active {
+        transform: scale(0.92);
+      }
+    }
+
+    .fit-icon {
+      flex-shrink: 0;
     }
 
     .cell-gutter {
@@ -199,7 +280,9 @@ const OVERSCAN_ROWS = 8;
     }
   `]
 })
-export class GridViewComponent {
+export class GridViewComponent implements OnDestroy {
+  readonly ts = inject(TranslationService);
+
   readonly headers = input.required<string[]>();
   readonly rows = input.required<string[][]>();
   readonly searchMatches = input<SearchMatch[]>([]);
@@ -212,6 +295,18 @@ export class GridViewComponent {
   private readonly viewportHeight = signal(600);
 
   readonly rowHeight = ROW_HEIGHT;
+
+  readonly customWidths = signal<Record<number, number>>({});
+
+  readonly columnWidths = computed(() => {
+    const headersCount = this.headers().length;
+    const overrides = this.customWidths();
+    const widths: number[] = [];
+    for (let i = 0; i < headersCount; i++) {
+      widths.push(overrides[i] ?? 150);
+    }
+    return widths;
+  });
 
   private readonly startIndex: Signal<number> = computed(() => {
     const raw = Math.floor(this.scrollTop() / ROW_HEIGHT) - OVERSCAN_ROWS;
@@ -269,6 +364,171 @@ export class GridViewComponent {
         this.scrollToRow(match.rowIndex, match.colIndex);
       }
     });
+
+    effect(() => {
+      const hdrs = this.headers();
+      const rws = this.rows();
+      if (hdrs.length > 0) {
+        setTimeout(() => {
+          this.autoResizeAllColumns();
+        }, 0);
+      }
+    });
+  }
+
+  private dragStartIndex = -1;
+  private dragStartWidth = 0;
+  private dragStartX = 0;
+  private onMouseMoveFn?: (e: MouseEvent) => void;
+  private onMouseUpFn?: () => void;
+  private measureCanvasCtx: CanvasRenderingContext2D | null = null;
+
+  ngOnDestroy(): void {
+    if (this.onMouseMoveFn) {
+      document.removeEventListener('mousemove', this.onMouseMoveFn);
+    }
+    if (this.onMouseUpFn) {
+      document.removeEventListener('mouseup', this.onMouseUpFn);
+    }
+    if (typeof document !== 'undefined') {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+  }
+
+  updateColumnWidth(index: number, width: number): void {
+    this.customWidths.update(overrides => ({
+      ...overrides,
+      [index]: Math.max(50, width)
+    }));
+  }
+
+  onResizeStart(event: MouseEvent, index: number): void {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    this.dragStartIndex = index;
+    this.dragStartWidth = this.columnWidths()[index] || 150;
+    this.dragStartX = event.clientX;
+    
+    this.onMouseMoveFn = (e: MouseEvent) => this.onResizeMove(e);
+    this.onMouseUpFn = () => this.onResizeEnd();
+    
+    document.addEventListener('mousemove', this.onMouseMoveFn);
+    document.addEventListener('mouseup', this.onMouseUpFn);
+    
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }
+
+  onResizeMove(event: MouseEvent): void {
+    if (this.dragStartIndex === -1) return;
+    const deltaX = event.clientX - this.dragStartX;
+    const newWidth = Math.max(50, this.dragStartWidth + deltaX);
+    this.updateColumnWidth(this.dragStartIndex, newWidth);
+  }
+
+  onResizeEnd(): void {
+    this.dragStartIndex = -1;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    
+    if (this.onMouseMoveFn) {
+      document.removeEventListener('mousemove', this.onMouseMoveFn);
+      this.onMouseMoveFn = undefined;
+    }
+    if (this.onMouseUpFn) {
+      document.removeEventListener('mouseup', this.onMouseUpFn);
+      this.onMouseUpFn = undefined;
+    }
+  }
+
+  private measureTextWidth(text: string): number {
+    if (typeof document === 'undefined') return 0;
+    if (!this.measureCanvasCtx) {
+      const canvas = document.createElement('canvas');
+      this.measureCanvasCtx = canvas.getContext('2d');
+    }
+    if (this.measureCanvasCtx) {
+      this.measureCanvasCtx.font = '13px Inter, sans-serif';
+      return this.measureCanvasCtx.measureText(text).width;
+    }
+    return text.length * 8;
+  }
+
+  autoResizeColumn(index: number): void {
+    const headerText = this.headers()[index] || '';
+    let maxWidth = this.measureTextWidth(headerText) + 28;
+
+    const allRows = this.rows();
+    const rowCount = allRows.length;
+    const maxScan = Math.min(1000, rowCount);
+    
+    for (let r = 0; r < maxScan; r++) {
+      const cellText = allRows[r][index] || '';
+      const cellWidth = this.measureTextWidth(cellText) + 28;
+      if (cellWidth > maxWidth) {
+        maxWidth = cellWidth;
+      }
+    }
+    
+    if (rowCount > 1000) {
+      const sampleIndices = [
+        Math.floor(rowCount / 2),
+        Math.floor(rowCount * 0.75),
+        rowCount - 1
+      ];
+      for (const r of sampleIndices) {
+        const cellText = allRows[r]?.[index] || '';
+        const cellWidth = this.measureTextWidth(cellText) + 28;
+        if (cellWidth > maxWidth) {
+          maxWidth = cellWidth;
+        }
+      }
+    }
+
+    const finalWidth = Math.min(800, Math.max(80, Math.ceil(maxWidth)));
+    this.updateColumnWidth(index, finalWidth);
+  }
+
+  autoResizeAllColumns(): void {
+    const colCount = this.headers().length;
+    const newOverrides: Record<number, number> = {};
+    const allRows = this.rows();
+    const rowCount = allRows.length;
+    const maxScan = Math.min(1000, rowCount);
+
+    for (let col = 0; col < colCount; col++) {
+      const headerText = this.headers()[col] || '';
+      let maxWidth = this.measureTextWidth(headerText) + 28;
+
+      for (let r = 0; r < maxScan; r++) {
+        const cellText = allRows[r][col] || '';
+        const cellWidth = this.measureTextWidth(cellText) + 28;
+        if (cellWidth > maxWidth) {
+          maxWidth = cellWidth;
+        }
+      }
+      
+      if (rowCount > 1000) {
+        const sampleIndices = [
+          Math.floor(rowCount / 2),
+          Math.floor(rowCount * 0.75),
+          rowCount - 1
+        ];
+        for (const r of sampleIndices) {
+          const cellText = allRows[r]?.[col] || '';
+          const cellWidth = this.measureTextWidth(cellText) + 28;
+          if (cellWidth > maxWidth) {
+            maxWidth = cellWidth;
+          }
+        }
+      }
+
+      newOverrides[col] = Math.min(800, Math.max(80, Math.ceil(maxWidth)));
+    }
+    
+    this.customWidths.set(newOverrides);
   }
 
   onGridScroll(event: Event): void {
@@ -298,15 +558,20 @@ export class GridViewComponent {
 
     // Horizontal scroll
     if (colIndex !== undefined) {
-      const cellLeft = 60 + colIndex * 150; // gutter (60) + index * cellWidth (150)
-      const cellRight = cellLeft + 150;
+      let cellLeft = 60; // gutter
+      const widths = this.columnWidths();
+      for (let i = 0; i < colIndex; i++) {
+        cellLeft += widths[i] ?? 150;
+      }
+      const cellWidth = widths[colIndex] ?? 150;
+      const cellRight = cellLeft + cellWidth;
       const viewportWidth = el.clientWidth;
       const currentScrollLeft = el.scrollLeft;
 
       const isColVisible = cellLeft >= currentScrollLeft && cellRight <= (currentScrollLeft + viewportWidth);
       if (!isColVisible) {
         // Center the column
-        const targetScrollLeft = cellLeft - (viewportWidth / 2) + 75;
+        const targetScrollLeft = cellLeft - (viewportWidth / 2) + (cellWidth / 2);
         el.scrollLeft = Math.max(0, targetScrollLeft);
       }
     }

@@ -41,6 +41,11 @@ export class TooltipDirective implements OnDestroy {
     this.destroyTooltip();
   }
 
+  @HostListener('mousedown')
+  onMouseDown() {
+    this.destroyTooltip();
+  }
+
   ngOnDestroy() {
     this.destroyTooltip();
   }

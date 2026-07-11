@@ -6,7 +6,10 @@ import {
   input,
   ViewChild,
   ElementRef,
-  afterNextRender
+  afterNextRender,
+  HostListener,
+  OnDestroy,
+  signal
 } from '@angular/core';
 import { TranslationService } from '../../services/translation.service';
 import { TooltipDirective } from '../../directives/tooltip.directive';
@@ -16,9 +19,29 @@ import { TooltipDirective } from '../../directives/tooltip.directive';
   standalone: true,
   imports: [TooltipDirective],
   template: `
-    <div class="search-panel" (keydown.escape)="close.emit()">
+    <div 
+      class="search-panel" 
+      [style.transform]="'translate(' + posX() + 'px, ' + posY() + 'px)'"
+      (keydown.escape)="close.emit()"
+    >
       <!-- Search Row -->
       <div class="search-row">
+        <!-- Drag Handle -->
+        <div 
+          class="drag-handle" 
+          (mousedown)="onDragStart($event)"
+          [appTooltip]="ts.t().langToggle === 'Language' ? 'Drag to move' : 'Arrastrar para mover'"
+          tooltipPosition="bottom"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="drag-handle-icon">
+            <circle cx="9" cy="12" r="1"/>
+            <circle cx="9" cy="5" r="1"/>
+            <circle cx="9" cy="19" r="1"/>
+            <circle cx="15" cy="12" r="1"/>
+            <circle cx="15" cy="5" r="1"/>
+            <circle cx="15" cy="19" r="1"/>
+          </svg>
+        </div>
         <!-- Expand/Collapse Replace Icon -->
         <button
           type="button"
@@ -207,6 +230,27 @@ import { TooltipDirective } from '../../directives/tooltip.directive';
       flex-direction: column;
       gap: 10px;
       animation: slideInFromTop 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .drag-handle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: move;
+      color: var(--text-muted);
+      padding: 4px;
+      border-radius: 4px;
+      transition: background-color 0.15s ease, color 0.15s ease;
+      flex-shrink: 0;
+      
+      &:hover {
+        background: var(--panel-hover);
+        color: var(--text);
+      }
+    }
+    
+    .drag-handle-icon {
+      opacity: 0.6;
     }
 
     .search-row,
@@ -427,11 +471,11 @@ import { TooltipDirective } from '../../directives/tooltip.directive';
     @keyframes slideInFromTop {
       from {
         opacity: 0;
-        transform: translateY(-10px);
+        margin-top: -10px;
       }
       to {
         opacity: 1;
-        transform: translateY(0);
+        margin-top: 0;
       }
     }
 
@@ -447,8 +491,9 @@ import { TooltipDirective } from '../../directives/tooltip.directive';
     }
   `]
 })
-export class SearchPanelComponent {
+export class SearchPanelComponent implements OnDestroy {
   readonly ts = inject(TranslationService);
+  private readonly el = inject(ElementRef);
 
   readonly headers = input.required<string[]>();
   readonly searchQuery = input.required<string>();
@@ -476,6 +521,91 @@ export class SearchPanelComponent {
   @Output() readonly close = new EventEmitter<void>();
 
   @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
+
+  readonly posX = signal(0);
+  readonly posY = signal(0);
+
+  private dragStartX = 0;
+  private dragStartY = 0;
+  private dragStartPosX = 0;
+  private dragStartPosY = 0;
+  private onMouseMoveFn?: (e: MouseEvent) => void;
+  private onMouseUpFn?: () => void;
+
+  @HostListener('window:mouseleave')
+  onWindowMouseLeave(): void {
+    this.onDragEnd();
+  }
+
+  onDragStart(event: MouseEvent): void {
+    event.preventDefault();
+    this.dragStartX = event.clientX;
+    this.dragStartY = event.clientY;
+    this.dragStartPosX = this.posX();
+    this.dragStartPosY = this.posY();
+
+    this.onMouseMoveFn = (e: MouseEvent) => this.onDragMove(e);
+    this.onMouseUpFn = () => this.onDragEnd();
+
+    document.addEventListener('mousemove', this.onMouseMoveFn);
+    document.addEventListener('mouseup', this.onMouseUpFn);
+
+    document.body.style.userSelect = 'none';
+  }
+
+  onDragMove(event: MouseEvent): void {
+    const deltaX = event.clientX - this.dragStartX;
+    const deltaY = event.clientY - this.dragStartY;
+    
+    let targetX = this.dragStartPosX + deltaX;
+    let targetY = this.dragStartPosY + deltaY;
+
+    if (typeof window !== 'undefined') {
+      const winWidth = window.innerWidth;
+      const winHeight = window.innerHeight;
+      
+      const panelWidth = 440;
+      const panelEl = this.el.nativeElement.querySelector('.search-panel');
+      const panelHeight = panelEl?.getBoundingClientRect()?.height || 150;
+      
+      const defaultLeft = winWidth - panelWidth - 24;
+      const minX = -defaultLeft;
+      const maxX = 24;
+      
+      targetX = Math.max(minX, Math.min(maxX, targetX));
+      
+      const defaultTop = 16;
+      const minY = -defaultTop;
+      const maxY = winHeight - defaultTop - panelHeight;
+      
+      targetY = Math.max(minY, Math.min(maxY, targetY));
+    }
+
+    this.posX.set(targetX);
+    this.posY.set(targetY);
+  }
+
+  onDragEnd(): void {
+    document.body.style.userSelect = '';
+    if (this.onMouseMoveFn) {
+      document.removeEventListener('mousemove', this.onMouseMoveFn);
+      this.onMouseMoveFn = undefined;
+    }
+    if (this.onMouseUpFn) {
+      document.removeEventListener('mouseup', this.onMouseUpFn);
+      this.onMouseUpFn = undefined;
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.onMouseMoveFn) {
+      document.removeEventListener('mousemove', this.onMouseMoveFn);
+    }
+    if (this.onMouseUpFn) {
+      document.removeEventListener('mouseup', this.onMouseUpFn);
+    }
+    document.body.style.userSelect = '';
+  }
 
   constructor() {
     afterNextRender(() => {

@@ -40,6 +40,22 @@ import { CustomSeparatorInputComponent } from '../custom-separator-input/custom-
               {{ ts.t().saveChanges }}
             </button>
 
+            <!-- Discard Changes Button -->
+            <button
+              type="button"
+              class="btn btn-ghost"
+              [disabled]="!isModified()"
+              (click)="discardChanges.emit()"
+              [appTooltip]="ts.t().langToggle === 'Language' ? 'Discard unsaved changes' : 'Descartar cambios no guardados'"
+              tooltipPosition="bottom"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+              </svg>
+              {{ ts.t().langToggle === 'Language' ? 'Discard' : 'Descartar' }}
+            </button>
+
             <button type="button" class="btn btn-ghost" (click)="clearFile.emit()">
               {{ ts.t().close }}
             </button>
@@ -72,7 +88,7 @@ import { CustomSeparatorInputComponent } from '../custom-separator-input/custom-
         <div class="toolbar-actions-desktop">
           <!-- Search Toggle -->
           @if (filePath()) {
-            <button type="button" class="btn btn-icon-only" (click)="searchToggle.emit()" [appTooltip]="ts.t().search" tooltipPosition="bottom">
+            <button type="button" class="btn btn-icon-only toggle-search-btn" (click)="searchToggle.emit()" [appTooltip]="ts.t().search" tooltipPosition="bottom">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="11" cy="11" r="8"/>
                 <path d="m21 21-4.3-4.3"/>
@@ -122,7 +138,7 @@ import { CustomSeparatorInputComponent } from '../custom-separator-input/custom-
             <div class="mobile-menu-dropdown">
               <!-- Search Item -->
               @if (filePath()) {
-                <button type="button" class="dropdown-item" (click)="triggerSearch()">
+                <button type="button" class="dropdown-item toggle-search-btn" (click)="triggerSearch()">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="item-icon">
                     <circle cx="11" cy="11" r="8"/>
                     <path d="m21 21-4.3-4.3"/>
@@ -588,6 +604,7 @@ export class ToolbarComponent {
   @Output() readonly delimiterKindChange = new EventEmitter<'comma' | 'semicolon' | 'tab' | 'custom'>();
   @Output() readonly customCharChange = new EventEmitter<string>();
   @Output() readonly saveFile = new EventEmitter<void>();
+  @Output() readonly discardChanges = new EventEmitter<void>();
   @Output() readonly searchToggle = new EventEmitter<void>();
 
   readonly isDark = signal(true);
