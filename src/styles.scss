@@ -104,7 +104,7 @@ body {
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-strong);
   color: var(--text);
-  padding: 6px 12px;
+  padding: 8px 14px;
   border-radius: 6px;
   font-size: 11px;
   font-family: var(--font-body);
@@ -132,6 +132,59 @@ body {
   &.tooltip-visible {
     opacity: 1;
     transform: translateY(0) !important;
+  }
+
+  /* Hierarchical Path Tooltip Styles */
+  .path-hierarchy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: left;
+    font-family: var(--font-body);
+  }
+
+  .path-hierarchy-row {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    line-height: 1.4;
+  }
+
+  .path-tree-connector {
+    color: var(--text-muted);
+    opacity: 0.45;
+    margin-right: 6px;
+    font-family: monospace;
+    font-size: 12px;
+    letter-spacing: -0.05em;
+  }
+
+  .tooltip-svg-icon {
+    width: 13px;
+    height: 13px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vertical-align: middle;
+    margin-right: 6px;
+    flex-shrink: 0;
+    
+    &.folder {
+      color: var(--text-muted);
+    }
+    
+    &.file {
+      color: var(--accent);
+    }
+  }
+
+  .path-segment-text {
+    color: var(--text-muted);
+    font-size: 11px;
+    
+    &.file-name {
+      color: var(--text);
+      font-weight: 600;
+    }
   }
 }
 

@@ -24,7 +24,8 @@ export interface FileTab {
             class="tab-item"
             [class.active]="tab.id === activeId()"
             [class.modified]="tab.isModified"
-            [appTooltip]="tab.path"
+            [appTooltip]="formatPathHierarchy(tab.path)"
+            [tooltipHtml]="true"
             tooltipPosition="bottom"
             (click)="selectTab.emit(tab.id)"
           >
@@ -280,5 +281,53 @@ export class TabBarComponent {
   onCloseClick(event: MouseEvent, tabId: string): void {
     event.stopPropagation(); // Avoid selecting the tab when closing it
     this.closeTab.emit(tabId);
+  }
+
+  formatPathHierarchy(path: string | null | undefined): string {
+    if (!path) return '';
+    
+    // Check for new unsaved tab
+    if (path.startsWith('New Tab') || path.startsWith('Nueva pestaña')) {
+      return `<strong>${path}</strong>`;
+    }
+
+    // Normalize slashes
+    const normalized = path.replace(/\\/g, '/');
+    const segments = normalized.split('/').filter(s => s.length > 0);
+    if (segments.length === 0) return path;
+
+    // Check if it's an absolute path
+    const isAbsolute = path.startsWith('/') || /^[a-zA-Z]:/.test(path);
+    
+    let html = '<div class="path-hierarchy">';
+    
+    for (let i = 0; i < segments.length; i++) {
+      const segment = segments[i];
+      const isLast = i === segments.length - 1;
+      const isFirst = i === 0;
+      
+      // Determine prefix for root
+      let displayName = segment;
+      if (isFirst && isAbsolute && path.startsWith('/')) {
+        displayName = '/' + segment;
+      }
+      
+      const indent = isFirst ? 0 : i * 14;
+      
+      html += `
+        <div class="path-hierarchy-row" style="padding-left: ${indent}px;">
+          ${!isFirst ? '<span class="path-tree-connector">└──</span>' : ''}
+          ${isLast ? `
+            <svg class="tooltip-svg-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+          ` : `
+            <svg class="tooltip-svg-icon folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+          `}
+          <span class="path-segment-text ${isLast ? 'file-name' : ''}">${displayName}</span>
+        </div>
+      `;
+    }
+    
+    html += '</div>';
+    return html;
   }
 }

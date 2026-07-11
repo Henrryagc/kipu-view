@@ -14,6 +14,7 @@ import {
 export class TooltipDirective implements OnDestroy {
   @Input('appTooltip') text: string | null = '';
   @Input() tooltipPosition: 'top' | 'bottom' = 'top';
+  @Input() tooltipHtml = false;
 
   private tooltipEl: HTMLDivElement | null = null;
   private destroyTimeout: any = null;
@@ -64,8 +65,12 @@ export class TooltipDirective implements OnDestroy {
     this.renderer.addClass(this.tooltipEl, 'custom-tooltip-box');
     this.renderer.addClass(this.tooltipEl, `tooltip-${this.tooltipPosition}`);
     
-    const textNode = this.renderer.createText(this.text || '');
-    this.renderer.appendChild(this.tooltipEl, textNode);
+    if (this.tooltipHtml) {
+      this.renderer.setProperty(this.tooltipEl, 'innerHTML', this.text || '');
+    } else {
+      const textNode = this.renderer.createText(this.text || '');
+      this.renderer.appendChild(this.tooltipEl, textNode);
+    }
 
     // Append to body so it doesn't get clipped by parent overflow:hidden containers
     this.renderer.appendChild(document.body, this.tooltipEl);
