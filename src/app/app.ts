@@ -299,6 +299,32 @@ export class App {
     }
 
     const matches: SearchMatch[] = [];
+
+    // Search headers (rowIndex = -1)
+    const headers = this.tableHeaders();
+    if (headers && headers.length > 0) {
+      const colsToSearch = searchCol !== null ? [searchCol] : Array.from({ length: headers.length }, (_, i) => i);
+      for (const c of colsToSearch) {
+        if (c < headers.length) {
+          const cellText = headers[c] || '';
+          regex.lastIndex = 0;
+          let match;
+          while ((match = regex.exec(cellText)) !== null) {
+            matches.push({
+              rowIndex: -1,
+              colIndex: c,
+              matchStart: match.index,
+              matchLength: match[0].length
+            });
+            if (match[0].length === 0) {
+              regex.lastIndex++;
+            }
+          }
+        }
+      }
+    }
+
+    // Search rows (rowIndex >= 0)
     for (let r = 0; r < rows.length; r++) {
       const row = rows[r];
       const colsToSearch = searchCol !== null ? [searchCol] : Array.from({ length: row.length }, (_, i) => i);
@@ -471,7 +497,7 @@ export class App {
     } catch (err) {
       this.saveStatus.set({
         type: 'error',
-        message: this.ts.t().saveError.replace('{error}', this.describeError(err, 'Unknown error'))
+        message: this.ts.t().saveError.replace('{error}', this.describeError(err, this.ts.t().errorUnknown))
       });
     } finally {
       this.isLoading.set(false);
@@ -492,7 +518,7 @@ export class App {
       );
     } catch (err) {
       this.appError.set(
-        this.describeError(err, 'Failed to reload the file to discard changes.')
+        this.describeError(err, this.ts.t().errorDiscardChanges)
       );
     } finally {
       this.isLoading.set(false);
@@ -569,7 +595,7 @@ export class App {
         ],
       });
     } catch (err) {
-      this.appError.set(this.describeError(err, 'The file dialog could not be opened.'));
+      this.appError.set(this.describeError(err, this.ts.t().errorFileDialog));
       return;
     }
 
@@ -587,7 +613,7 @@ export class App {
     try {
       const fileExists = await exists(path);
       if (!fileExists) {
-        this.appError.set(`File no longer exists at: ${path}`);
+        this.appError.set(this.ts.t().errorFileNoLongerExists.replace('{path}', path));
         return;
       }
 
@@ -615,7 +641,7 @@ export class App {
       }
     } catch (err) {
       this.appError.set(
-        this.describeError(err, 'The selected file could not be read.'),
+        this.describeError(err, this.ts.t().errorFileRead),
       );
     } finally {
       this.isLoading.set(false);
