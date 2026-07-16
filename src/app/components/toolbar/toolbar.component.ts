@@ -22,39 +22,36 @@ import { CustomSeparatorInputComponent } from '../custom-separator-input/custom-
           </button>
 
           @if (filePath()) {
-            <button
-              type="button"
-              class="btn"
-              [class.btn-primary]="isModified()"
-              [class.btn-ghost]="!isModified()"
-              [disabled]="!isModified()"
-              (click)="saveFile.emit()"
-              [appTooltip]="ts.t().saveChanges"
-              tooltipPosition="bottom"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                <polyline points="17 21 17 13 7 13 7 21"/>
-                <polyline points="7 3 7 8 15 8"/>
-              </svg>
-              {{ ts.t().saveChanges }}
-            </button>
+            @if (isModified()) {
+              <button
+                type="button"
+                class="btn btn-primary"
+                (click)="saveFile.emit()"
+                [appTooltip]="ts.t().saveChanges"
+                tooltipPosition="bottom"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                {{ ts.t().saveChanges }}
+              </button>
 
-            <!-- Discard Changes Button -->
-            <button
-              type="button"
-              class="btn btn-ghost"
-              [disabled]="!isModified()"
-              (click)="discardChanges.emit()"
-              [appTooltip]="ts.t().langToggle === 'Language' ? 'Discard unsaved changes' : 'Descartar cambios no guardados'"
-              tooltipPosition="bottom"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
-                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                <path d="M3 3v5h5"/>
-              </svg>
-              {{ ts.t().langToggle === 'Language' ? 'Discard' : 'Descartar' }}
-            </button>
+              <button
+                type="button"
+                class="btn btn-ghost"
+                (click)="discardChanges.emit()"
+                [appTooltip]="ts.t().discardUnsaved"
+                tooltipPosition="bottom"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                  <path d="M3 3v5h5"/>
+                </svg>
+                {{ ts.t().discard }}
+              </button>
+            }
 
             <button type="button" class="btn btn-ghost" (click)="clearFile.emit()">
               {{ ts.t().close }}
@@ -124,7 +121,7 @@ import { CustomSeparatorInputComponent } from '../custom-separator-input/custom-
             type="button"
             class="btn btn-icon-only"
             (click)="toggleMenu($event)"
-            [appTooltip]="ts.t().langToggle === 'Language' ? 'More Options' : 'Más opciones'"
+            [appTooltip]="ts.t().moreOptions"
             tooltipPosition="bottom"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">

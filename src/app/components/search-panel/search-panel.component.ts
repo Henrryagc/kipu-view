@@ -30,7 +30,7 @@ import { TooltipDirective } from '../../directives/tooltip.directive';
         <div 
           class="drag-handle" 
           (mousedown)="onDragStart($event)"
-          [appTooltip]="ts.t().langToggle === 'Language' ? 'Drag to move' : 'Arrastrar para mover'"
+          [appTooltip]="ts.t().dragToMove"
           tooltipPosition="bottom"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="drag-handle-icon">
@@ -120,7 +120,7 @@ import { TooltipDirective } from '../../directives/tooltip.directive';
             class="btn-icon-sm"
             [disabled]="matchesCount() === 0"
             (click)="prevMatch.emit()"
-            [appTooltip]="ts.t().langToggle === 'Language' ? 'Previous Match (Shift+Enter)' : 'Coincidencia anterior (Mayús+Enter)'"
+            [appTooltip]="ts.t().prevMatch"
             tooltipPosition="bottom"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -132,7 +132,7 @@ import { TooltipDirective } from '../../directives/tooltip.directive';
             class="btn-icon-sm"
             [disabled]="matchesCount() === 0"
             (click)="nextMatch.emit()"
-            [appTooltip]="ts.t().langToggle === 'Language' ? 'Next Match (Enter)' : 'Siguiente coincidencia (Enter)'"
+            [appTooltip]="ts.t().nextMatch"
             tooltipPosition="bottom"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
