@@ -307,7 +307,7 @@ export class TabBarComponent {
 
   formatPathHierarchy(path: string | null | undefined): string {
     if (!path) return '';
-    
+
     // Check for new unsaved tab
     if (path.startsWith('New Tab') || path.startsWith('Nueva pestaña')) {
       return `<strong>${path}</strong>`;
@@ -320,7 +320,7 @@ export class TabBarComponent {
 
     // Check if it's an absolute path
     const isAbsolute = path.startsWith('/') || /^[a-zA-Z]:/.test(path);
-    
+
     let html = `
       <div class="tooltip-path-container">
         <button type="button" class="tooltip-copy-btn" onclick="window.copyTabPath(event, '${path.replace(/\\/g, '\\\\')}')">
@@ -332,20 +332,20 @@ export class TabBarComponent {
         </button>
         <div class="path-hierarchy">
     `;
-    
+
     for (let i = 0; i < segments.length; i++) {
       const segment = segments[i];
       const isLast = i === segments.length - 1;
       const isFirst = i === 0;
-      
+
       // Determine prefix for root
       let displayName = segment;
       if (isFirst && isAbsolute && path.startsWith('/')) {
         displayName = '/' + segment;
       }
-      
+
       const indent = isFirst ? 0 : i * 14;
-      
+
       html += `
         <div class="path-hierarchy-row" style="padding-left: ${indent}px;">
           ${!isFirst ? '<span class="path-tree-connector">└──</span>' : ''}
@@ -358,7 +358,7 @@ export class TabBarComponent {
         </div>
       `;
     }
-    
+
     html += '</div></div>';
     return html;
   }

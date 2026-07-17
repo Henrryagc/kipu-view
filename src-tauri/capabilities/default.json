@@ -9,7 +9,11 @@
     "core:default",
     "dialog:allow-open",
     "fs:allow-read-text-file",
+    "fs:allow-write-text-file",
     "fs:allow-exists",
+    "fs:allow-stat",
+    "updater:default",
+    "process:allow-restart",
     {
       "identifier": "fs:allow-read-text-file",
       "allow": [
@@ -28,7 +32,41 @@
       ]
     },
     {
+      "identifier": "fs:allow-write-text-file",
+      "allow": [
+        {
+          "path": "$HOME/**"
+        },
+        {
+          "path": "$DOCUMENT/**"
+        },
+        {
+          "path": "$DOWNLOAD/**"
+        },
+        {
+          "path": "$DESKTOP/**"
+        }
+      ]
+    },
+    {
       "identifier": "fs:allow-exists",
+      "allow": [
+        {
+          "path": "$HOME/**"
+        },
+        {
+          "path": "$DOCUMENT/**"
+        },
+        {
+          "path": "$DOWNLOAD/**"
+        },
+        {
+          "path": "$DESKTOP/**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-stat",
       "allow": [
         {
           "path": "$HOME/**"

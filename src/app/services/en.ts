@@ -58,7 +58,16 @@ export const en = {
   errorDiscardChanges: 'Failed to reload the file to discard changes.',
   errorFileDialog: 'The file dialog could not be opened.',
   errorFileNoLongerExists: 'File no longer exists at: {path}',
-  errorFileRead: 'The selected file could not be read.'
+  errorFileRead: 'The selected file could not be read.',
+  fileChangedTitle: 'File Changed',
+  fileChangedMessage: 'The file "{name}" has been modified externally. Do you want to reload it? Any unsaved changes will be lost.',
+  reloadBtn: 'Reload',
+  ignoreBtn: 'Ignore',
+  updateAvailableTitle: 'Update Available',
+  updateAvailableMessage: 'A new version ({version}) of KipuView is available. Do you want to download and install it now?',
+  updateError: 'Failed to check/apply updates: {error}',
+  updateChecking: 'Checking for updates...',
+  updateNoNewVersion: 'You are on the latest version.'
 };
 
 export type TranslationKeys = typeof en;

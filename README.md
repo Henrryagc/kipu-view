@@ -52,7 +52,7 @@ bun install   # or npm install
 # Start the Angular development server
 bun run start # or npm run start
 ```
-Once started, open your web browser and navigate to **`http://localhost:4200/`**. 
+Once started, open your web browser and navigate to **`http://localhost:4221/`**. 
 
 > [!NOTE]
 > When running directly in the browser, native Tauri integrations (such as native file dialogs and OS drag events) are mocked/disabled. Use the web filepicker to open files.

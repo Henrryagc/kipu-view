@@ -60,5 +60,14 @@ export const es: TranslationKeys = {
   errorDiscardChanges: 'Error al volver a cargar el archivo para descartar los cambios.',
   errorFileDialog: 'No se pudo abrir el diálogo de selección de archivo.',
   errorFileNoLongerExists: 'El archivo ya no existe en: {path}',
-  errorFileRead: 'El archivo seleccionado no se pudo leer.'
+  errorFileRead: 'El archivo seleccionado no se pudo leer.',
+  fileChangedTitle: 'Archivo modificado',
+  fileChangedMessage: 'El archivo "{name}" ha sido modificado externamente. ¿Desea volver a cargarlo? Se perderá cualquier cambio no guardado.',
+  reloadBtn: 'Recargar',
+  ignoreBtn: 'Ignorar',
+  updateAvailableTitle: 'Actualización disponible',
+  updateAvailableMessage: 'Una nueva versión ({version}) de KipuView está disponible. ¿Desea descargarla e instalarla ahora?',
+  updateError: 'Error al comprobar/aplicar actualizaciones: {error}',
+  updateChecking: 'Buscando actualizaciones...',
+  updateNoNewVersion: 'Ya tienes la última versión instalada.'
 };
